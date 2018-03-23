@@ -9,17 +9,29 @@
 		<module>remoting-api</module>
 		<module>remoting-common</module>
 		<module>remoting-impl-amqp</module>
+		<module>remoting-impl-amqp-spring</module>
 	</modules>
 	<properties>
 		<maven.compiler.debug>true</maven.compiler.debug>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
+		<springboot.version>1.5.4.RELEASE</springboot.version>
 	</properties>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<version>${springboot.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-beans</artifactId>
-			<version>5.0.4.RELEASE</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -29,7 +41,6 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
