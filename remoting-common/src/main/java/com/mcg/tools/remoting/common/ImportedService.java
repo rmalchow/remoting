@@ -5,12 +5,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -21,6 +21,8 @@ import com.mcg.tools.remoting.api.entities.RemotingResponse;
 import com.mcg.tools.remoting.common.io.ClientChannel;
 
 public class ImportedService<T> implements InvocationHandler {
+
+	private static Log log = LogFactory.getLog(ImportedService.class);
 	
 	private ObjectMapper mapper = new ObjectMapper();
 	
@@ -72,6 +74,12 @@ public class ImportedService<T> implements InvocationHandler {
 	@SuppressWarnings("unchecked")
 	public T getProxy() {
 		if(proxy==null) {
+			log.info(" ======================================================================== ");
+			log.info(" === ");
+			log.info(" === CREATING PROXY FOR: "+serviceInterface);
+			log.info(" === ");
+			log.info(" ======================================================================== ");
+			
 			proxy = (T) Proxy.newProxyInstance(serviceInterface.getClassLoader(), new Class[] {serviceInterface}, this );
 		}
 		return proxy;

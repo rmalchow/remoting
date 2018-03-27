@@ -3,12 +3,14 @@ package com.mcg.tools.remoting.impl.amqp;
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
 
+import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.common.ExportedService;
 import com.mcg.tools.remoting.common.io.ServerChannel;
 import com.rabbitmq.client.AMQP;
@@ -29,26 +31,31 @@ public class AmqpServerChannel implements ServerChannel, ConnectionListener {
 	private Channel serverChannel;
 	private ExportedService exportedService;
 
+	private String exchangeName;
+	private String requestQueueName;
+	
 	public AmqpServerChannel(ConnectionFactory connectionFactory, String app, String service, ExportedService exportedService) {
 		this.connectionFactory = connectionFactory;
-		this.connectionFactory.addConnectionListener(this);
 		this.app = app;
 		this.service = service;
 		this.exportedService = exportedService;
 		this.connection = connectionFactory.createConnection();
-		listen(connection);
+		this.connectionFactory.addConnectionListener(this);
 	}
 
 	private void listen(Connection connection) {
 		
 		try {
 
-			String exchangeName = app + ":" + service;
-			String requestQueueName = app+":"+service+":request";
+			if(StringUtils.isEmpty(app)) throw new RemotingException("EMPTY_APP_NAME", null);
+			if(StringUtils.isEmpty(service)) throw new RemotingException("EMPTY_SERVICE_NAME", null);
+
+			this.exchangeName = app + ":" + service;
+			this.requestQueueName = app+":"+service+":request";
 			
 			this.serverChannel = connection.createChannel(false);
 			this.serverChannel.exchangeDeclare(exchangeName, BuiltinExchangeType.DIRECT, true, false, new HashMap<>());
-			this.serverChannel.queueDeclare(requestQueueName, false, false, false, new HashMap<>());
+			this.serverChannel.queueDeclare(requestQueueName, false, false, true, new HashMap<>());
 			this.serverChannel.queueBind(requestQueueName, exchangeName, "request");
 			this.serverChannel.basicConsume(requestQueueName, false, new DefaultConsumer(this.serverChannel) {
 				
@@ -86,7 +93,6 @@ public class AmqpServerChannel implements ServerChannel, ConnectionListener {
 	@Override
 	public void onClose(Connection connection) {
 		this.connection = connectionFactory.createConnection();
-		listen(this.connection);
 	}
 	
 	

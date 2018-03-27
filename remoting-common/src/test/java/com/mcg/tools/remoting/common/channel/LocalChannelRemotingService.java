@@ -18,14 +18,14 @@ public class LocalChannelRemotingService extends AbstractRemotingService {
 	
 	
 	@Override
-	public ClientChannel createChannel(String app, String service) {
+	public ClientChannel createClientChannel(String app, String service) {
 		ClientChannel cc = new LocalClientChannel(app+":"+service);
 		ccMap.put(app+":"+service, cc);
 		return cc;
 	}
 
 	@Override
-	public ServerChannel createChannel(String app, String service, ExportedService stub) {
+	public ServerChannel createServerChannel(String app, String service, ExportedService stub) {
 		LocalServerChannel sc = new LocalServerChannel(stub);
 		scMap.put(app+":"+service, sc);
 		return sc;

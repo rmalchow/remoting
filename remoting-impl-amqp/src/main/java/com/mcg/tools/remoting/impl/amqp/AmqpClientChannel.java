@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
@@ -12,6 +13,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.boot.autoconfigure.jms.JmsProperties.DeliveryMode;
 
+import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.common.io.ClientChannel;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
@@ -41,11 +43,10 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 	
 	public AmqpClientChannel(ConnectionFactory connectionFactory, String app, String service) {
 		this.connectionFactory = connectionFactory;
-		this.connectionFactory.addConnectionListener(this);
 		this.app = app;
 		this.service = service;
 		this.connection = connectionFactory.createConnection();
-		listen(connection);
+		this.connectionFactory.addConnectionListener(this);
 	}
 
 	@Override
@@ -61,6 +62,9 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 	private void listen(Connection connection) {
 		
 		try {
+			
+			if(StringUtils.isEmpty(app)) throw new RemotingException("EMPTY_APP_NAME", null);
+			if(StringUtils.isEmpty(service)) throw new RemotingException("EMPTY_SERVICE_NAME", null);
 			
 			this.routingKey = UUID.randomUUID().toString();
 			
@@ -124,7 +128,6 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 	@Override
 	public void onClose(Connection connection) {
 		this.connection = connectionFactory.createConnection();
-		listen(this.connection);
 	}
 	
 	
