@@ -40,16 +40,9 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 
 	private ConcurrentHashMap<String,BlockingCell<byte[]>> requestMap = new ConcurrentHashMap<>();
 	
-	public AmqpClientChannel(ConnectionFactory connectionFactory, String app, String service) {
-		this.connectionFactory = connectionFactory;
+	public AmqpClientChannel(String app, String service) {
 		this.app = app;
 		this.service = service;
-		if(connectionFactory==null) {
-			log.warn("connection factory is [NULL]");
-		}
-		this.connectionFactory = connectionFactory;
-		this.connectionFactory.addConnectionListener(this);
-		this.connectionFactory.createConnection();
 	}
 
 	@Override
@@ -63,7 +56,6 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 	}
 	
 	private void listen(Connection connection) {
-		
 		try {
 			
 			if(StringUtils.isEmpty(app)) throw new RemotingException("EMPTY_APP_NAME", null);
@@ -119,8 +111,6 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 		} catch (Exception e) {
 			log.warn("error creating consumer: ",e);
 		}
-		
-
 	}
 	
 	@Override
@@ -133,7 +123,11 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 		connectionFactory.createConnection();
 	}
 	
-	
+	public void start(ConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
+		this.connectionFactory.addConnectionListener(this);
+		this.connectionFactory.createConnection();
+	}
 	
 
 }
