@@ -114,19 +114,16 @@ public abstract class AbstractRemotingService implements RemotingService {
 	public void init() {
 		log.info(" ================================================================= ");
 		log.info(" == ");
-		log.info(" == REMOTING SERVICE: EXPORT SERVICES ");
-		log.info(" == ");
-		log.info(" ================================================================= ");
 		for(Object o : ctx.getBeansWithAnnotation(RemotingEndpoint.class).values()) {
-			log.info(" >>>>>>>>>>>>>>>>>>> "+o.getClass());
+			log.info(" == REMOTING SERVICE: EXPORT SERVICE: "+o.getClass());
 			try {
 				exportService(o);
 			} catch (Exception e) {
 				log.warn("failed to export: "+o.getClass(),e);
 			}
 		}
-		
-		
+		log.info(" == ");
+		log.info(" ================================================================= ");
 	}
 	
 }
