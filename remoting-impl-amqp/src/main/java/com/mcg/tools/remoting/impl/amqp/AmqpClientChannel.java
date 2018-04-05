@@ -44,6 +44,9 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 		this.connectionFactory = connectionFactory;
 		this.app = app;
 		this.service = service;
+		if(connectionFactory==null) {
+			log.warn("connection factory is [NULL]");
+		}
 		this.connectionFactory = connectionFactory;
 		this.connectionFactory.addConnectionListener(this);
 		this.connectionFactory.createConnection();
