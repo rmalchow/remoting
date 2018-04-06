@@ -124,6 +124,8 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 	}
 	
 	public void start(ConnectionFactory connectionFactory) {
+		if(this.connectionFactory!=null) return;
+		log.info(" <<< starting client channel with connection factory: "+connectionFactory);
 		this.connectionFactory = connectionFactory;
 		this.connectionFactory.addConnectionListener(this);
 		this.connectionFactory.createConnection();

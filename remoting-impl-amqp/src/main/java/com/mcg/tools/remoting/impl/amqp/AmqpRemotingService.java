@@ -31,6 +31,9 @@ public class AmqpRemotingService extends AbstractRemotingService {
 	public ClientChannel createClientChannel(String app, String service) {
 		AmqpClientChannel c = new AmqpClientChannel(app, service);
 		clientChannels.add(c);
+		if(connectionFactory!=null) {
+			c.start(connectionFactory);
+		}
 		return c;
 	}
 
@@ -38,11 +41,16 @@ public class AmqpRemotingService extends AbstractRemotingService {
 	public ServerChannel createServerChannel(String app, String service, ExportedService exportedService) {
 		AmqpServerChannel s = new AmqpServerChannel(app, service, exportedService);
 		serverChannels.add(s);
+		if(connectionFactory!=null) {
+			s.start(connectionFactory);
+		}
 		return s;
 	}
 	
 	@PostConstruct
 	public void init() {
+		log.info(" ||| server channels: "+serverChannels.size());
+		log.info(" ||| client channels: "+clientChannels.size());
 		for(AmqpClientChannel cc : clientChannels) {
 			try {
 				cc.start(connectionFactory);

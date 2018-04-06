@@ -92,6 +92,7 @@ public class AmqpServerChannel implements ServerChannel, ConnectionListener {
 	}
 	
 	public void start(ConnectionFactory connectionFactory) {
+		log.info(" >>> starting server channel with connection factory: "+connectionFactory);
 		this.connectionFactory = connectionFactory;
 		this.connectionFactory.addConnectionListener(this);
 		connectionFactory.createConnection();
