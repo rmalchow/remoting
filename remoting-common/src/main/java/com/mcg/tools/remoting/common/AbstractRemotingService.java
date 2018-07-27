@@ -68,7 +68,7 @@ public abstract class AbstractRemotingService implements RemotingService {
 	public void exportService(Object service) throws RemotingException {
 
 		RemotingEndpoint rec = service.getClass().getAnnotation(RemotingEndpoint.class);
-		if(rec==null) throw new RemotingException("NOT_AN_EXPORTABLE_ENDPOINT", null);			
+		if(rec==null) throw new RemotingException("NOT_AN_EXPORTABLE_ENDPOINT: "+service.getClass(), null);			
 
 		Class<?> serviceInterface = rec.value(); 
 		
