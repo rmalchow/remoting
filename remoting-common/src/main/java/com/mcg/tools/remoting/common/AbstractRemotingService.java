@@ -72,8 +72,8 @@ public abstract class AbstractRemotingService implements RemotingService {
 		if(rec==null) {
 			// could not find annotation, maybe its a proxy
 			CglibHelper h = new CglibHelper(service);
-			service = h.getTargetObject();
-			rec = service.getClass().getAnnotation(RemotingEndpoint.class);
+			Object proxiedService = h.getTargetObject();
+			rec = proxiedService.getClass().getAnnotation(RemotingEndpoint.class);
 			
 			if(rec==null) {
 				throw new RemotingException("NOT_AN_EXPORTABLE_ENDPOINT: "+service.getClass(), null);
