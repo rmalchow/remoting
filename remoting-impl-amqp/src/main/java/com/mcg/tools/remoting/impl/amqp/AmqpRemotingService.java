@@ -47,7 +47,7 @@ public class AmqpRemotingService extends AbstractRemotingService {
 		return s;
 	}
 	
-	@PostConstruct
+	
 	public void init() {
 		log.info(" ||| server channels: "+serverChannels.size());
 		log.info(" ||| client channels: "+clientChannels.size());

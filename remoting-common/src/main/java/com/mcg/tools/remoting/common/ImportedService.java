@@ -3,7 +3,9 @@ package com.mcg.tools.remoting.common;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
@@ -11,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.context.ApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -22,6 +25,8 @@ import com.mcg.tools.remoting.common.io.ClientChannel;
 
 public class ImportedService<T> implements InvocationHandler {
 
+	private ApplicationContext ctx;
+	
 	private static Log log = LogFactory.getLog(ImportedService.class);
 	
 	private ObjectMapper mapper = new ObjectMapper();
@@ -33,22 +38,33 @@ public class ImportedService<T> implements InvocationHandler {
 	private RemotingCodec remotingCodec;
 	private Executor executor;
 	
-	public ImportedService(Class<T> serviceInterface, ClientChannel cc, List<RemotingInterceptor> remotingInterceptors, RemotingCodec remotingCodec, Executor executor) {
+	public ImportedService(Class<T> serviceInterface, ClientChannel cc, ApplicationContext ctx, RemotingCodec remotingCodec, Executor executor) {
 		this.clientChannel = cc;
 		this.serviceInterface = serviceInterface;
-		this.remotingInterceptors = remotingInterceptors;
+		this.ctx = ctx;
 		this.remotingCodec = remotingCodec;
 		this.executor = executor;
 	}
 
+	private List<RemotingInterceptor> getInterceptors() {
+		if(remotingInterceptors==null) {
+			List<RemotingInterceptor> t = new ArrayList<>();
+			for(Map.Entry<String,RemotingInterceptor> e : ctx.getBeansOfType(RemotingInterceptor.class).entrySet()) {
+				t.add(e.getValue());
+			}
+			remotingInterceptors = t;
+		}
+		return remotingInterceptors;
+	}
+	
+	
 	@Override
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 		
 		RemotingRequest request = remotingCodec.encodeRequest(method, args);
-		if(remotingInterceptors!=null) {
-			for(RemotingInterceptor ri : remotingInterceptors) {
-				ri.beforeSend(request);
-			}
+		List<RemotingInterceptor> interceptors = getInterceptors(); 
+		for(RemotingInterceptor ri : interceptors) {
+			ri.beforeSend(request);
 		}
 
 		byte[] in = mapper.writeValueAsBytes(request);
@@ -56,15 +72,17 @@ public class ImportedService<T> implements InvocationHandler {
 		InvokeCallable ic = new InvokeCallable(in);
 
 		FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
+
+		log.info("Importing Service: >>> calling "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
 		executor.execute(t);
 		
 		RemotingResponse response = t.get(10, TimeUnit.SECONDS);
+		log.info("Importing Service: <<< response received "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
 		
-		if(remotingInterceptors!=null) {
-			for(RemotingInterceptor ri : remotingInterceptors) {
-				ri.afterReceive(request, response);
-			}
+		for(RemotingInterceptor ri : interceptors) {
+			ri.afterReceive(request, response);
 		}
+
 		if(!response.isSuccess()) throw new RuntimeException("REMOTE_CALL_FAILED");
 		if(response.getReturnValue()==null) return null;
 		return mapper.readValue(mapper.writeValueAsBytes(response.getReturnValue()), TypeFactory.defaultInstance().constructType(method.getGenericReturnType()));

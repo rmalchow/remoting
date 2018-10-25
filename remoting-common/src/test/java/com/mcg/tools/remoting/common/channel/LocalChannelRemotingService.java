@@ -31,11 +31,6 @@ public class LocalChannelRemotingService extends AbstractRemotingService {
 		return sc;
 	}
 	
-	public List<RemotingInterceptor> getInterceptors() {
-		return remotingInterceptors;
-	}
-	
-	
 	private class LocalServerChannel implements ServerChannel {
 		
 		private ExportedService stub;

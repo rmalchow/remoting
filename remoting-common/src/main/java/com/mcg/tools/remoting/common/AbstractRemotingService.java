@@ -1,8 +1,6 @@
 package com.mcg.tools.remoting.common;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -13,10 +11,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.util.StringUtils;
 
 import com.mcg.tools.remoting.api.RemotingCodec;
-import com.mcg.tools.remoting.api.RemotingInterceptor;
 import com.mcg.tools.remoting.api.RemotingService;
 import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
 import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
@@ -26,15 +25,12 @@ import com.mcg.tools.remoting.common.io.ClientChannel;
 import com.mcg.tools.remoting.common.io.ServerChannel;
 import com.mcg.tools.remoting.common.util.CglibHelper;
 
-public abstract class AbstractRemotingService implements RemotingService {
+public abstract class AbstractRemotingService implements RemotingService, ApplicationListener<ContextRefreshedEvent> {
 
 	private static Log log = LogFactory.getLog(AbstractRemotingService.class);
 	
 	private Map<String,ServerChannel> exported = new HashMap<>();
 	private Map<String,ImportedService<?>> imported = new HashMap<>();
-	
-	@Autowired(required=false)
-	protected List<RemotingInterceptor> remotingInterceptors = new ArrayList<>();
 	
 	@Autowired
 	private ApplicationContext ctx;
@@ -60,7 +56,7 @@ public abstract class AbstractRemotingService implements RemotingService {
 		
 		ClientChannel cc = createClientChannel(appname, servicename);
 		RemotingCodec rc = createCodec(serviceInterface);
-		ImportedService<T> s = createImportedService(serviceInterface, cc, remotingInterceptors,rc);
+		ImportedService<T> s = createImportedService(serviceInterface, cc,rc);
 		imported.put(appname+":"+servicename,s);
 		return s.getProxy();
 	}
@@ -98,7 +94,7 @@ public abstract class AbstractRemotingService implements RemotingService {
 		log.info(" >>> exporting: "+serviceInterface+" as "+appname+":"+servicename);
 		
 		RemotingCodec rc = createCodec(serviceInterface);
-		ExportedService es = createExportedService(serviceInterface, service, remotingInterceptors, rc);
+		ExportedService es = createExportedService(serviceInterface, service, rc);
 		ServerChannel sc = createServerChannel(appname,servicename,es);  
 		exported.put(appname+":"+servicename, sc);
 	}
@@ -107,24 +103,24 @@ public abstract class AbstractRemotingService implements RemotingService {
 		return new SimpleRemotingCodec(serviceInterface);
 	}
 
-	public <T> ImportedService<T> createImportedService(Class<T> serviceInterface, ClientChannel cc, List<RemotingInterceptor> remotingInterceptors, RemotingCodec remotingCodec) {
-		return new ImportedService<T>(serviceInterface, cc, remotingInterceptors, remotingCodec,executor);
+	public <T> ImportedService<T> createImportedService(Class<T> serviceInterface, ClientChannel cc, RemotingCodec remotingCodec) {
+		return new ImportedService<T>(serviceInterface, cc, ctx, remotingCodec,executor);
 	}
 
-	public ExportedService createExportedService(Class<?> serviceInterface, Object service, List<RemotingInterceptor> remotingInterceptors, RemotingCodec codec) {
-		return new ExportedService(serviceInterface, service, remotingInterceptors, codec,executor);
+	public ExportedService createExportedService(Class<?> serviceInterface, Object service, RemotingCodec codec) {
+		return new ExportedService(serviceInterface, service, ctx, codec,executor);
 	}
 
 	public abstract ClientChannel createClientChannel(String app, String service); 
 	
 	public abstract ServerChannel createServerChannel(String app, String service, ExportedService stub);
 
-	
-	@PostConstruct
 	public void init() {
 		log.info(" ================================================================= ");
 		log.info(" == ");
-		for(Object o : ctx.getBeansWithAnnotation(RemotingEndpoint.class).values()) {
+		for(String s : ctx.getBeanNamesForAnnotation(RemotingEndpoint.class)) {
+			log.info("s ----> "+s);
+			Object o = ctx.getBean(s);
 			log.info(" == REMOTING SERVICE: EXPORT SERVICE: "+o.getClass());
 			try {
 				exportService(o);
@@ -134,6 +130,14 @@ public abstract class AbstractRemotingService implements RemotingService {
 		}
 		log.info(" == ");
 		log.info(" ================================================================= ");
+		
+		
 	}
+	
+	@Override
+	public void onApplicationEvent(ContextRefreshedEvent arg0) {
+		init();
+	}
+	
 	
 }
