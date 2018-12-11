@@ -56,9 +56,9 @@ public class ExportedService {
 				ri.beforeHandle(request);
 			}
 
-			log.info("Exported Service: <<< calling "+service.getClass().getSimpleName()+"."+request.getMethodName()+"()");
+			log.debug("Exported Service: <<< calling "+service.getClass().getSimpleName()+"."+request.getMethodName()+"()");
 			Object o = codec.invoke(request, service);
-			log.info("Exported Service: >>> returning result "+service.getClass().getSimpleName()+"."+request.getMethodName()+"()");
+			log.debug("Exported Service: >>> returning result "+service.getClass().getSimpleName()+"."+request.getMethodName()+"()");
 			
 			for(RemotingInterceptor ri : interceptors) {
 				ri.afterHandle(request, response);

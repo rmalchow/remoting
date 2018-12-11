@@ -73,11 +73,11 @@ public class ImportedService<T> implements InvocationHandler {
 
 		FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
 
-		log.info("Importing Service: >>> calling "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
+		log.debug("Importing Service: >>> calling "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
 		executor.execute(t);
 		
 		RemotingResponse response = t.get(10, TimeUnit.SECONDS);
-		log.info("Importing Service: <<< response received "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
+		log.debug("Importing Service: <<< response received "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
 		
 		for(RemotingInterceptor ri : interceptors) {
 			ri.afterReceive(request, response);
