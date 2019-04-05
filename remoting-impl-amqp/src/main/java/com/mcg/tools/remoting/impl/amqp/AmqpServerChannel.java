@@ -14,11 +14,11 @@ import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.common.ExportedService;
 import com.mcg.tools.remoting.common.io.ServerChannel;
 import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.AMQP.BasicProperties;
 
 public class AmqpServerChannel implements ServerChannel, ConnectionListener {
 

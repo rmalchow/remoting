@@ -61,38 +61,31 @@ public class ImportedService<T> implements InvocationHandler {
 	@Override
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 		
-		try {
-		
-			RemotingRequest request = remotingCodec.encodeRequest(method, args);
-			List<RemotingInterceptor> interceptors = getInterceptors(); 
-			for(RemotingInterceptor ri : interceptors) {
-				ri.beforeSend(request);
-			}
-	
-			byte[] in = mapper.writeValueAsBytes(request);
-			
-			InvokeCallable ic = new InvokeCallable(in);
-	
-			FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
-	
-			log.debug("Importing Service: >>> calling "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
-			executor.execute(t);
-			
-			RemotingResponse response = t.get(10, TimeUnit.SECONDS);
-			log.debug("Importing Service: <<< response received "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
-			
-			for(RemotingInterceptor ri : interceptors) {
-				ri.afterReceive(request, response);
-			}
-	
-			if(!response.isSuccess()) throw new RuntimeException("REMOTE_CALL_FAILED");
-			if(response.getReturnValue()==null) return null;
-			return mapper.readValue(mapper.writeValueAsBytes(response.getReturnValue()), TypeFactory.defaultInstance().constructType(method.getGenericReturnType()));
-		} catch (Throwable e) {
-			log.info("Imported Service: >>> returning error "+serviceInterface.getClass().getSimpleName());
-			log.warn("failed to invoke imported  method: ",e);
-			throw e;
+		RemotingRequest request = remotingCodec.encodeRequest(method, args);
+		List<RemotingInterceptor> interceptors = getInterceptors(); 
+		for(RemotingInterceptor ri : interceptors) {
+			ri.beforeSend(request);
 		}
+
+		byte[] in = mapper.writeValueAsBytes(request);
+		
+		InvokeCallable ic = new InvokeCallable(in);
+
+		FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
+
+		log.debug("Importing Service: >>> calling "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
+		executor.execute(t);
+		
+		RemotingResponse response = t.get(10, TimeUnit.SECONDS);
+		log.debug("Importing Service: <<< response received "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
+		
+		for(RemotingInterceptor ri : interceptors) {
+			ri.afterReceive(request, response);
+		}
+
+		if(!response.isSuccess()) throw new RuntimeException("REMOTE_CALL_FAILED");
+		if(response.getReturnValue()==null) return null;
+		return mapper.readValue(mapper.writeValueAsBytes(response.getReturnValue()), TypeFactory.defaultInstance().constructType(method.getGenericReturnType()));
 	}
 	
 	
