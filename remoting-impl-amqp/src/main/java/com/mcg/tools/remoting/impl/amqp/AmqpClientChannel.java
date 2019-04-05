@@ -47,12 +47,17 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 
 	@Override
 	public byte[] invoke(byte[] in) throws Exception {
-		String correlationId = UUID.randomUUID().toString();
-		BasicProperties props = new BasicProperties.Builder().replyTo(routingKey).correlationId(correlationId).deliveryMode(DeliveryMode.PERSISTENT.getValue()).build();
-		BlockingCell<byte[]> bc = new BlockingCell<>();
-		requestMap.put(correlationId, bc);
-		clientChannel.basicPublish(exchangeName, "request", true, props, in);
-		return bc.get();
+		try {
+			String correlationId = UUID.randomUUID().toString();
+			BasicProperties props = new BasicProperties.Builder().replyTo(routingKey).correlationId(correlationId).deliveryMode(DeliveryMode.PERSISTENT.getValue()).build();
+			BlockingCell<byte[]> bc = new BlockingCell<>();
+			requestMap.put(correlationId, bc);
+			clientChannel.basicPublish(exchangeName, "request", true, props, in);
+			return bc.get();
+		} catch (Exception e) {
+			log.warn("error in client channel invoke(): ", e);
+			throw e;
+		}
 	}
 	
 	private void listen(Connection connection) {
@@ -115,11 +120,18 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 	
 	@Override
 	public void onCreate(Connection connection) {
+		log.info("new connection created!");
 		listen(connection);
 	}
 
 	@Override
 	public void onClose(Connection connection) {
+		log.info("connection closed!");
+		try {
+			clientChannel.abort();
+			this.clientChannel = null;
+		} catch (Exception e) {
+		}
 		connectionFactory.createConnection();
 	}
 	
