@@ -3,8 +3,6 @@ package com.mcg.tools.remoting.impl.amqp;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
