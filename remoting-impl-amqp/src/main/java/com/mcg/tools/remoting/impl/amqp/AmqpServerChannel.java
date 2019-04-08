@@ -24,10 +24,13 @@ public class AmqpServerChannel implements ServerChannel, ConnectionListener {
 
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
+	
 	private ConnectionFactory connectionFactory;
+	private Connection connection;
+	private Channel serverChannel;
+
 	private String app;
 	private String service;
-	private Channel serverChannel;
 	private ExportedService exportedService;
 
 	private String exchangeName;
@@ -40,6 +43,8 @@ public class AmqpServerChannel implements ServerChannel, ConnectionListener {
 	}
 
 	private void listen(Connection connection) {
+		
+		this.connection = connection;
 		
 		try {
 
@@ -83,19 +88,24 @@ public class AmqpServerChannel implements ServerChannel, ConnectionListener {
 	
 	@Override
 	public void onCreate(Connection connection) {
-		listen(connection);
+		//listen(connection);
 	}
 
 	@Override
 	public void onClose(Connection connection) {
-		connectionFactory.createConnection();
+		if(this.connection == null) {
+		} else if (connection != this.connection) {
+			return;
+		}
+		Connection c = connectionFactory.createConnection();
+		listen(c);
 	}
 	
 	public void start(ConnectionFactory connectionFactory) {
 		log.info(" >>> starting server channel with connection factory: "+connectionFactory);
 		this.connectionFactory = connectionFactory;
 		this.connectionFactory.addConnectionListener(this);
-		connectionFactory.createConnection();
+		listen(connectionFactory.createConnection());
 	}
 
 	

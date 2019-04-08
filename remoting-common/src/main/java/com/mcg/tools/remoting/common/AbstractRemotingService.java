@@ -5,8 +5,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -130,8 +128,6 @@ public abstract class AbstractRemotingService implements RemotingService, Applic
 		}
 		log.info(" == ");
 		log.info(" ================================================================= ");
-		
-		
 	}
 	
 	@Override

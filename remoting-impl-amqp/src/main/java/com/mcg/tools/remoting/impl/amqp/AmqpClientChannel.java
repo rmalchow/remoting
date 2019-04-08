@@ -29,9 +29,11 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
 	private ConnectionFactory connectionFactory;
+	private Connection connection;
+	private Channel clientChannel;
+
 	private String app;
 	private String service;
-	private Channel clientChannel;
 	
 	private String exchangeName;
 	private String responseQueueName;
@@ -115,12 +117,17 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 	
 	@Override
 	public void onCreate(Connection connection) {
-		listen(connection);
+		//listen(connection);
 	}
 
 	@Override
 	public void onClose(Connection connection) {
-		connectionFactory.createConnection();
+		if(this.connection == null) {
+		} else if (connection != this.connection) {
+			return;
+		}
+		Connection c = connectionFactory.createConnection();
+		listen(c);
 	}
 	
 	public void start(ConnectionFactory connectionFactory) {
@@ -128,7 +135,7 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 		log.info(" <<< starting client channel with connection factory: "+connectionFactory);
 		this.connectionFactory = connectionFactory;
 		this.connectionFactory.addConnectionListener(this);
-		this.connectionFactory.createConnection();
+		listen(this.connectionFactory.createConnection());
 	}
 	
 
