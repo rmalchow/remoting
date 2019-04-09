@@ -67,25 +67,31 @@ public class ImportedService<T> implements InvocationHandler {
 			ri.beforeSend(request);
 		}
 
-		byte[] in = mapper.writeValueAsBytes(request);
-		
-		InvokeCallable ic = new InvokeCallable(in);
-
-		FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
-
-		log.debug("Importing Service: >>> calling "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
-		executor.execute(t);
-		
-		RemotingResponse response = t.get(10, TimeUnit.SECONDS);
-		log.debug("Importing Service: <<< response received "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
-		
-		for(RemotingInterceptor ri : interceptors) {
-			ri.afterReceive(request, response);
+		try {
+			byte[] in = mapper.writeValueAsBytes(request);
+			
+			InvokeCallable ic = new InvokeCallable(in);
+	
+			FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
+	
+			log.debug("Importing Service: >>> calling "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
+			executor.execute(t);
+			
+			RemotingResponse response = t.get(10, TimeUnit.SECONDS);
+			log.debug("Importing Service: <<< response received "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
+			
+			for(RemotingInterceptor ri : interceptors) {
+				ri.afterReceive(request, response);
+			}
+	
+			if(!response.isSuccess()) throw new RuntimeException("REMOTE_CALL_FAILED");
+			if(response.getReturnValue()==null) return null;
+			return mapper.readValue(mapper.writeValueAsBytes(response.getReturnValue()), TypeFactory.defaultInstance().constructType(method.getGenericReturnType()));
+			
+		} catch (Throwable t) {
+			log.warn("RPC failed:",t);
+			throw t;
 		}
-
-		if(!response.isSuccess()) throw new RuntimeException("REMOTE_CALL_FAILED");
-		if(response.getReturnValue()==null) return null;
-		return mapper.readValue(mapper.writeValueAsBytes(response.getReturnValue()), TypeFactory.defaultInstance().constructType(method.getGenericReturnType()));
 	}
 	
 	
