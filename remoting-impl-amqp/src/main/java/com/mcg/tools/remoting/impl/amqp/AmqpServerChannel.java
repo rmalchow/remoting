@@ -20,12 +20,11 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.AMQP.BasicProperties;
 
-public class AmqpServerChannel implements ServerChannel, ConnectionListener {
+public class AmqpServerChannel implements ServerChannel{
 
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
 	
-	private ConnectionFactory connectionFactory;
 	private Connection connection;
 	private Channel serverChannel;
 
@@ -86,26 +85,9 @@ public class AmqpServerChannel implements ServerChannel, ConnectionListener {
 
 	}
 	
-	@Override
-	public void onCreate(Connection connection) {
-		//listen(connection);
-	}
-
-	@Override
-	public void onClose(Connection connection) {
-		if(this.connection == null) {
-		} else if (connection != this.connection) {
-			return;
-		}
-		Connection c = connectionFactory.createConnection();
-		listen(c);
-	}
-	
-	public void start(ConnectionFactory connectionFactory) {
-		log.info(" >>> starting server channel with connection factory: "+connectionFactory);
-		this.connectionFactory = connectionFactory;
-		this.connectionFactory.addConnectionListener(this);
-		listen(connectionFactory.createConnection());
+	public void start(Connection connection) {
+		this.connection = connection;
+		listen(connection);
 	}
 
 	

@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.mcg.tools.remoting.common.AbstractRemotingService;
@@ -13,13 +15,15 @@ import com.mcg.tools.remoting.common.ExportedService;
 import com.mcg.tools.remoting.common.io.ClientChannel;
 import com.mcg.tools.remoting.common.io.ServerChannel;
 
-public class AmqpRemotingService extends AbstractRemotingService {
+public class AmqpRemotingService extends AbstractRemotingService  implements ConnectionListener {
 
 	private static Log log = LogFactory.getLog(AmqpRemotingService.class);
 	
 	@Autowired
 	private ConnectionFactory connectionFactory;
 	
+	private Connection connection;
+
 	private List<AmqpClientChannel> clientChannels = new ArrayList<>();
 	private List<AmqpServerChannel> serverChannels = new ArrayList<>();
 	
@@ -32,9 +36,6 @@ public class AmqpRemotingService extends AbstractRemotingService {
 	public ClientChannel createClientChannel(String app, String service) {
 		AmqpClientChannel c = new AmqpClientChannel(app, service);
 		clientChannels.add(c);
-		if(connectionFactory!=null) {
-			c.start(connectionFactory);
-		}
 		return c;
 	}
 
@@ -42,32 +43,45 @@ public class AmqpRemotingService extends AbstractRemotingService {
 	public ServerChannel createServerChannel(String app, String service, ExportedService exportedService) {
 		AmqpServerChannel s = new AmqpServerChannel(app, service, exportedService);
 		serverChannels.add(s);
-		if(connectionFactory!=null) {
-			s.start(connectionFactory);
-		}
 		return s;
 	}
 	
+	@Override
+	public void onClose(Connection connection) {
+		// TODO Auto-generated method stub
+		if(this.connection == connection) {
+			this.connection = null;
+		}
+		connectionFactory.createConnection();
+	}
 	
-	public void init() {
-		log.info(" ||| remoting service: "+this.hashCode());
-		log.info(" ||| server channels: "+serverChannels.size());
-		log.info(" ||| client channels: "+clientChannels.size());
+	@Override
+	public void onCreate(Connection connection) {
 		for(AmqpClientChannel cc : clientChannels) {
 			try {
-				cc.start(connectionFactory);
+				cc.start(connection);
 			} catch (Exception e) {
 				log.warn("error initializing client: ",e);
 			}
 		}
 		for(AmqpServerChannel sc : serverChannels) {
 			try {
-				sc.start(connectionFactory);
+				sc.start(connection);
 			} catch (Exception e) {
 				log.warn("error initializing server: ",e);
 			}
 		}
+	}
+	
+	public void init() {
+		log.info(" ||| remoting service: "+this.hashCode());
+		log.info(" ||| server channels: "+serverChannels.size());
+		log.info(" ||| client channels: "+clientChannels.size());
 		super.init();
+		
+		connectionFactory.addConnectionListener(this);
+		connectionFactory.createConnection();
+		
 	}
 	
 	

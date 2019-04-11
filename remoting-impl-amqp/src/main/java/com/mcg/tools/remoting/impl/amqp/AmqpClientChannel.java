@@ -9,8 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.boot.autoconfigure.jms.JmsProperties.DeliveryMode;
 
 import com.mcg.tools.remoting.api.annotations.RemotingException;
@@ -24,11 +22,10 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ReturnListener;
 import com.rabbitmq.utility.BlockingCell;
 
-public class AmqpClientChannel implements ClientChannel, ConnectionListener {
+public class AmqpClientChannel implements ClientChannel {
 
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
-	private ConnectionFactory connectionFactory;
 	private Connection connection;
 	private Channel clientChannel;
 
@@ -115,27 +112,9 @@ public class AmqpClientChannel implements ClientChannel, ConnectionListener {
 		}
 	}
 	
-	@Override
-	public void onCreate(Connection connection) {
-		//listen(connection);
-	}
-
-	@Override
-	public void onClose(Connection connection) {
-		if(this.connection == null) {
-		} else if (connection != this.connection) {
-			return;
-		}
-		Connection c = connectionFactory.createConnection();
-		listen(c);
-	}
-	
-	public void start(ConnectionFactory connectionFactory) {
-		if(this.connectionFactory!=null) return;
-		log.info(" <<< starting client channel with connection factory: "+connectionFactory);
-		this.connectionFactory = connectionFactory;
-		this.connectionFactory.addConnectionListener(this);
-		listen(this.connectionFactory.createConnection());
+	public void start(Connection connection) {
+		this.connection = connection;
+		listen(this.connection);
 	}
 	
 
