@@ -98,11 +98,7 @@ public class ImportedService<T> implements InvocationHandler {
 	@SuppressWarnings("unchecked")
 	public T getProxy() {
 		if(proxy==null) {
-			log.info(" ======================================================================== ");
-			log.info(" === ");
 			log.info(" === CREATING PROXY FOR: "+serviceInterface);
-			log.info(" === ");
-			log.info(" ======================================================================== ");
 			
 			proxy = (T) Proxy.newProxyInstance(serviceInterface.getClassLoader(), new Class[] {serviceInterface}, this );
 		}

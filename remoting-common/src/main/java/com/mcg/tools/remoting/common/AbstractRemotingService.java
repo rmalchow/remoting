@@ -114,8 +114,6 @@ public abstract class AbstractRemotingService implements RemotingService, Applic
 	public abstract ServerChannel createServerChannel(String app, String service, ExportedService stub);
 
 	public void init() {
-		log.info(" ================================================================= ");
-		log.info(" == ");
 		for(String s : ctx.getBeanNamesForAnnotation(RemotingEndpoint.class)) {
 			log.info("s ----> "+s);
 			Object o = ctx.getBean(s);
@@ -126,8 +124,6 @@ public abstract class AbstractRemotingService implements RemotingService, Applic
 				log.warn("failed to export: "+o.getClass(),e);
 			}
 		}
-		log.info(" == ");
-		log.info(" ================================================================= ");
 	}
 	
 	@Override
