@@ -52,12 +52,20 @@ public class AmqpRemotingService extends AbstractRemotingService  implements Con
 		if(this.connection == connection) {
 			this.connection = null;
 		}
-		connectionFactory.createConnection();
+		while(this.connection == null) {
+			try {
+				Thread.sleep(1000);
+				connectionFactory.createConnection();
+			} catch (Exception e) {
+				log.warn("error reconnecting: ",e);
+			}
+		}
 	}
 	
 	@Override
 	public void onCreate(Connection connection) {
 		log.info("connection created, reinitializing client channels ... ");
+		this.connection = connection;
 		for(AmqpClientChannel cc : clientChannels) {
 			try {
 				cc.start(connection);
