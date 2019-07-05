@@ -57,6 +57,7 @@ public class AmqpRemotingService extends AbstractRemotingService  implements Con
 	
 	@Override
 	public void onCreate(Connection connection) {
+		log.info("connection created, reinitializing client channels ... ");
 		for(AmqpClientChannel cc : clientChannels) {
 			try {
 				cc.start(connection);
@@ -64,6 +65,7 @@ public class AmqpRemotingService extends AbstractRemotingService  implements Con
 				log.warn("error initializing client: ",e);
 			}
 		}
+		log.info("connection created, reinitializing server channels ... ");
 		for(AmqpServerChannel sc : serverChannels) {
 			try {
 				sc.start(connection);
@@ -74,6 +76,7 @@ public class AmqpRemotingService extends AbstractRemotingService  implements Con
 	}
 	
 	public void init() {
+		
 		log.info(" ||| remoting service: "+this.hashCode());
 		log.info(" ||| server channels: "+serverChannels.size());
 		log.info(" ||| client channels: "+clientChannels.size());
