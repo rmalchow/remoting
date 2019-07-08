@@ -60,7 +60,6 @@ public class AmqpRemotingService extends AbstractRemotingService {
 		}
 		
 		if(open) {
-			log.info("OPEN connection");
 			onCreate(this.connection);
 			return;
 		}
