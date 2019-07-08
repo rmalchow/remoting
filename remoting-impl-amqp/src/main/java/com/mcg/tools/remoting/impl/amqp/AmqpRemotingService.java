@@ -5,24 +5,29 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import com.mcg.tools.remoting.common.AbstractRemotingService;
 import com.mcg.tools.remoting.common.ExportedService;
 import com.mcg.tools.remoting.common.io.ClientChannel;
 import com.mcg.tools.remoting.common.io.ServerChannel;
 
-public class AmqpRemotingService extends AbstractRemotingService  implements ConnectionListener {
+@EnableScheduling
+public class AmqpRemotingService extends AbstractRemotingService {
 
 	private static Log log = LogFactory.getLog(AmqpRemotingService.class);
+	
 	
 	@Autowired
 	private ConnectionFactory connectionFactory;
 	
 	private Connection connection;
+	private boolean status = false; 
 
 	private List<AmqpClientChannel> clientChannels = new ArrayList<>();
 	private List<AmqpServerChannel> serverChannels = new ArrayList<>();
@@ -46,41 +51,45 @@ public class AmqpRemotingService extends AbstractRemotingService  implements Con
 		return s;
 	}
 	
-	@Override
-	public void onClose(Connection connection) {
-		// TODO Auto-generated method stub
-		if(this.connection == connection) {
-			this.connection = null;
+	@Scheduled(fixedDelay = 10000)
+	public void checkConnection() {
+		boolean open = false;
+		try {
+			open = this.connection.isOpen();
+		} catch (Exception e) {
 		}
-		while(this.connection == null) {
-			try {
-				Thread.sleep(1000);
-				connectionFactory.createConnection();
-			} catch (Exception e) {
-				log.warn("error reconnecting: ",e);
-			}
+		
+		if(open) {
+			log.info("OPEN connection");
+			onCreate(this.connection);
+			return;
 		}
+
+		status = false;
+		
+		log.info("CLOSED connection");
+		onCreate(connectionFactory.createConnection());
 	}
 	
-	@Override
 	public void onCreate(Connection connection) {
-		log.info("connection created, reinitializing client channels ... ");
+		if(connection==null) return;
+		if(status) return;
+		log.info("connection created, initializing client channels ... ");
 		this.connection = connection;
+
 		for(AmqpClientChannel cc : clientChannels) {
-			try {
-				cc.start(connection);
-			} catch (Exception e) {
-				log.warn("error initializing client: ",e);
-			}
+			cc.start(connection);
 		}
+		log.info("connection created, initializing client channels ... DONE!");
 		log.info("connection created, reinitializing server channels ... ");
 		for(AmqpServerChannel sc : serverChannels) {
-			try {
-				sc.start(connection);
-			} catch (Exception e) {
-				log.warn("error initializing server: ",e);
-			}
+			sc.start(connection);
 		}
+		
+		if(this.connection.isOpen()) {
+			this.status = true; 
+		}
+		log.info("connection created, reinitializing server channels ...DONE! ");
 	}
 	
 	public void init() {
@@ -88,11 +97,12 @@ public class AmqpRemotingService extends AbstractRemotingService  implements Con
 		log.info(" ||| remoting service: "+this.hashCode());
 		log.info(" ||| server channels: "+serverChannels.size());
 		log.info(" ||| client channels: "+clientChannels.size());
+		log.info(" ||| connection factory: "+connectionFactory.getClass());
 		super.init();
 		
-		connectionFactory.addConnectionListener(this);
-		connectionFactory.createConnection();
-		
+		CachingConnectionFactory ccf = (CachingConnectionFactory)connectionFactory;
+		ccf.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(true);
+
 	}
 	
 	

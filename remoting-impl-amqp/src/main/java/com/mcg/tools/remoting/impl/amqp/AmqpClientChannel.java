@@ -26,7 +26,6 @@ public class AmqpClientChannel implements ClientChannel {
 
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
-	private Connection connection;
 	private Channel clientChannel;
 
 	private String app;
@@ -113,8 +112,7 @@ public class AmqpClientChannel implements ClientChannel {
 	}
 	
 	public void start(Connection connection) {
-		this.connection = connection;
-		listen(this.connection);
+		listen(connection);
 	}
 	
 

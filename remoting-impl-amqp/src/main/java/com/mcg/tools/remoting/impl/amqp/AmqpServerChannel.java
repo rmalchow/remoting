@@ -7,25 +7,22 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionListener;
 
 import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.common.ExportedService;
 import com.mcg.tools.remoting.common.io.ServerChannel;
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.AMQP.BasicProperties;
 
 public class AmqpServerChannel implements ServerChannel{
 
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
 	
-	private Connection connection;
 	private Channel serverChannel;
 
 	private String app;
@@ -42,8 +39,6 @@ public class AmqpServerChannel implements ServerChannel{
 	}
 
 	private void listen(Connection connection) {
-		
-		this.connection = connection;
 		
 		try {
 
@@ -86,7 +81,6 @@ public class AmqpServerChannel implements ServerChannel{
 	}
 	
 	public void start(Connection connection) {
-		this.connection = connection;
 		listen(connection);
 	}
 
