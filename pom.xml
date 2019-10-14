@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.mcg.tools</groupId>
 	<artifactId>remoting</artifactId>
-	<version>0.0.21-SNAPSHOT</version>
+	<version>0.1.229</version>
 	<packaging>pom</packaging>
 	<modules>
 		<module>remoting-api</module>

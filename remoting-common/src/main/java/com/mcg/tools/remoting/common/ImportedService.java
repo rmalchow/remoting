@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.mcg.tools.remoting.api.RemotingCodec;
 import com.mcg.tools.remoting.api.RemotingInterceptor;
+import com.mcg.tools.remoting.api.annotations.RemotingTimeout;
 import com.mcg.tools.remoting.api.entities.RemotingRequest;
 import com.mcg.tools.remoting.api.entities.RemotingResponse;
 import com.mcg.tools.remoting.common.io.ClientChannel;
@@ -77,7 +78,13 @@ public class ImportedService<T> implements InvocationHandler {
 			log.debug("Importing Service: >>> calling "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
 			executor.execute(t);
 			
-			RemotingResponse response = t.get(10, TimeUnit.SECONDS);
+			long timeout = 10;
+			
+			if(method.getAnnotation(RemotingTimeout.class)!=null) {
+				timeout = method.getAnnotation(RemotingTimeout.class).value();
+			}
+			
+			RemotingResponse response = t.get(timeout, TimeUnit.SECONDS);
 			log.debug("Importing Service: <<< response received "+serviceInterface.getSimpleName()+"."+request.getMethodName()+"()");
 			
 			for(RemotingInterceptor ri : interceptors) {
