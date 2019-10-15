@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.mcg.tools</groupId>
@@ -10,12 +11,15 @@
 		<module>remoting-common</module>
 		<module>remoting-impl-amqp</module>
 		<module>remoting-impl-amqp-spring</module>
+		<module>remoting-examples</module>
 	</modules>
 	<properties>
 		<maven.compiler.debug>true</maven.compiler.debug>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<springboot.version>2.0.3.RELEASE</springboot.version>
+		<org.reflections.version>0.9.11</org.reflections.version>
+		<classgraph.version>4.8.47</classgraph.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -25,6 +29,16 @@
 				<version>${springboot.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
+			</dependency>
+			<dependency>
+			  <groupId>io.github.classgraph</groupId>
+			  <artifactId>classgraph</artifactId>
+			  <version>${classgraph.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.reflections</groupId>
+				<artifactId>reflections</artifactId>
+				<version>${org.reflections.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

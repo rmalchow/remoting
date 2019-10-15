@@ -7,8 +7,7 @@ import com.mcg.tools.remoting.api.entities.RemotingRequest;
 
 public interface RemotingCodec {
 
-	Object invoke(RemotingRequest request, Object target)
-			throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException;
+	Object invoke(Class<?> serviceInterface, RemotingRequest request, Object target) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException;
 
 	RemotingRequest encodeRequest(Method m, Object[] args);
 

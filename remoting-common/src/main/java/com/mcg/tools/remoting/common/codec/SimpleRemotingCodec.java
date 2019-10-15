@@ -21,10 +21,7 @@ public class SimpleRemotingCodec implements RemotingCodec {
 
 	private ObjectMapper objectMapper = new ObjectMapper();
 	
-	protected Class<?> serviceInterface;
-	
-	public SimpleRemotingCodec (Class<?> serviceInterface) {
-		this.serviceInterface = serviceInterface;
+	public SimpleRemotingCodec () {
 	}
 	
 	@Override
@@ -36,7 +33,7 @@ public class SimpleRemotingCodec implements RemotingCodec {
 	}
 
 	@Override
-	public Object invoke(RemotingRequest request, Object target) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
+	public Object invoke(Class<?> serviceInterface, RemotingRequest request, Object target) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
 		String name = request.getMethodName();
 		Object[] args = request.getParams();
 		if(args==null) {

@@ -26,6 +26,8 @@ public class AmqpClientChannel implements ClientChannel {
 
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
+	private Connection connection;
+	
 	private Channel clientChannel;
 
 	private String app;
@@ -54,6 +56,7 @@ public class AmqpClientChannel implements ClientChannel {
 	}
 	
 	private void listen(Connection connection) {
+		this.connection = connection;
 		try {
 			
 			if(StringUtils.isEmpty(app)) throw new RemotingException("EMPTY_APP_NAME", null);
@@ -112,7 +115,7 @@ public class AmqpClientChannel implements ClientChannel {
 	}
 	
 	public void start(Connection connection) {
-		listen(connection);
+		if(this.connection == null || this.connection != connection) listen(connection);
 	}
 	
 

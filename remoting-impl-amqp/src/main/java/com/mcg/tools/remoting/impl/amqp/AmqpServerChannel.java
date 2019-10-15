@@ -22,6 +22,7 @@ public class AmqpServerChannel implements ServerChannel{
 
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
+	private Connection connection;
 	
 	private Channel serverChannel;
 
@@ -76,12 +77,11 @@ public class AmqpServerChannel implements ServerChannel{
 		} catch (Exception e) {
 			log.warn("error creating consumer: ",e);
 		}
-		
 
 	}
 	
 	public void start(Connection connection) {
-		listen(connection);
+		if(this.connection == null || this.connection!= connection) listen(connection);
 	}
 
 	
