@@ -25,18 +25,33 @@ public class ClientService {
 			log.info("my random number is: "+randomService.getNumber());
 			randomService.printSomething("client service says: "+UUID.randomUUID());
 			
+			long s = 0;
+			
+			int count = 100000;
+			
+			long start = System.currentTimeMillis();
+			
+			for(int i=1;i<count;i++) {
+				s = s + randomService.getNumber();
+				if(i%1000 == 0) {
+					log.info("average at "+i+": "+(s/i)+" / "+((double)(System.currentTimeMillis()-start)/(double)i)+" ms/req");
+				}
+			}
+			
+			
+			
 			try {
-				log.info("short: wait three seconds ... (should fail)");
-				randomService.waitShort(3);
+				log.info("short: wait 5 seconds ... (should fail)");
+				randomService.waitShort(5);
 			} catch (Exception e) {
-				log.info("short: wait three seconds ... ERROR (as expected)");
+				log.info("short: wait 5 seconds ... ERROR (as expected)");
 			}
 			try {
 				log.info("short: wait one second (should be ok) ... ");
 				randomService.waitShort(1);
 				log.info("short: wait one second ... OK!");
 			} catch (Exception e) {
-				log.error("error (UNEXPECTED): "+e.getMessage()+" ("+e.getClass()+")");
+				log.error("error (UNEXPECTED): "+e.getMessage()+" ("+e.getClass()+")",e);
 			}
 			try {
 				log.info("long: wait 21 seconds ... (should fail)");
@@ -45,11 +60,11 @@ public class ClientService {
 				log.info("long: wait 21 seconds ... ERROR (as expected)");
 			}
 			try {
-				log.info("long: wait 19 seconds (should be ok) ... ");
-				randomService.waitLong(19);
-				log.info("long: wait 19 seconds ... OK!");
+				log.info("long: wait 18 seconds (should be ok) ... ");
+				randomService.waitLong(18);
+				log.info("long: wait 18 seconds ... OK!");
 			} catch (Exception e) {
-				log.error("error (UNEXPECTED): "+e.getMessage()+" ("+e.getClass()+")");
+				log.error("error (UNEXPECTED): "+e.getMessage()+" ("+e.getClass()+")",e);
 			}
 			try {
 				log.info("long: wait 9 seconds (depends on global setting) ... ");

@@ -10,7 +10,7 @@ public interface RandomService {
 
 	public void printSomething(String s);
 	
-	@RemotingTimeout(value = 2)
+	@RemotingTimeout(value = 3)
 	public void waitShort(int x); 
 	
 	public void waitNormal(int x); 
