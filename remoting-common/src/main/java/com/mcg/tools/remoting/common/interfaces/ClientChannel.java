@@ -1,4 +1,4 @@
-package com.mcg.tools.remoting.common.io;
+package com.mcg.tools.remoting.common.interfaces;
 
 public interface ClientChannel {
 

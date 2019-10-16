@@ -1,6 +1,6 @@
-package com.mcg.tools.remoting.common;
+package com.mcg.tools.remoting.common.interfaces;
 
-import com.mcg.tools.remoting.common.io.ServerChannel;
+import com.mcg.tools.remoting.common.ExportedService;
 
 public interface ServerChannelProvider {
 

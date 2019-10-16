@@ -10,7 +10,7 @@ import org.springframework.amqp.rabbit.connection.Connection;
 
 import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.common.ExportedService;
-import com.mcg.tools.remoting.common.io.ServerChannel;
+import com.mcg.tools.remoting.common.interfaces.ServerChannel;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.BuiltinExchangeType;

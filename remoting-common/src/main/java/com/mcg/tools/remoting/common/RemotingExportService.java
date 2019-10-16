@@ -14,7 +14,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import com.mcg.tools.remoting.api.RemotingCodec;
 import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
 
 @Service
@@ -26,13 +25,7 @@ public class RemotingExportService {
 	
 	@Autowired
 	public ApplicationContext ctx;
-
-	@Autowired
-	private RemotingCodec remotingCodec;
 	
-	@Autowired 
-	private ServerChannelProvider serverChannelProvider; 
-
 	@Bean
 	@Scope(scopeName = DefaultListableBeanFactory.SCOPE_PROTOTYPE)
 	public ExportedService exportService(Object service) {

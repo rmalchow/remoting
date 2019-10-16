@@ -13,8 +13,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.mcg.tools.remoting.common.ClientChannelProvider;
-import com.mcg.tools.remoting.common.io.ClientChannel;
+import com.mcg.tools.remoting.common.interfaces.ClientChannel;
+import com.mcg.tools.remoting.common.interfaces.ClientChannelProvider;
 
 @Component
 public class AmqpClientChannelProvider implements ClientChannelProvider {

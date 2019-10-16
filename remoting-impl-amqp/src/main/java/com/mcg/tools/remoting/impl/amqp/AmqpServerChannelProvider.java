@@ -14,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.mcg.tools.remoting.common.ExportedService;
-import com.mcg.tools.remoting.common.ServerChannelProvider;
-import com.mcg.tools.remoting.common.io.ServerChannel;
+import com.mcg.tools.remoting.common.interfaces.ServerChannel;
+import com.mcg.tools.remoting.common.interfaces.ServerChannelProvider;
 
 @Component
 public class AmqpServerChannelProvider implements ServerChannelProvider {

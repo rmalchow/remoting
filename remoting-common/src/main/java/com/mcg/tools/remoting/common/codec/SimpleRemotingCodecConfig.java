@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import com.mcg.tools.remoting.api.RemotingCodec;
 
 @Configuration
-public class CodecConfig {
+public class SimpleRemotingCodecConfig {
 	
 	@Bean
 	@ConditionalOnMissingBean()

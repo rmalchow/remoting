@@ -4,3 +4,5 @@ spring.rabbitmq.username: ${RABBIT_ADMIN:admin}
 spring.rabbitmq.password: ${RABBIT_ADMIN_PASSWORD:admin}
 spring.rabbitmq.requested-heartbeat: 10s
 server.port: 8092
+mcg.remoting:
+   timeout: 4

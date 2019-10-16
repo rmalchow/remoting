@@ -1,8 +1,5 @@
 package com.mcg.tools.remoting.common;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.logging.Log;
@@ -10,21 +7,17 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcg.tools.remoting.api.RemotingCodec;
-import com.mcg.tools.remoting.api.RemotingInterceptor;
 import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
 import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
 import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.api.entities.RemotingRequest;
-import com.mcg.tools.remoting.api.entities.RemotingResponse;
+import com.mcg.tools.remoting.common.interfaces.ServerChannelProvider;
 import com.mcg.tools.remoting.common.util.CglibHelper;
 
 public class ExportedService {
 
 	private static Log log = LogFactory.getLog(ExportedService.class);
-	
-	private ObjectMapper mapper = new ObjectMapper();
 	
 	private Object service;
 	private Class<?> serviceInterface;
@@ -32,9 +25,6 @@ public class ExportedService {
 	@Autowired
 	private RemotingCodec codec;
 
-	@Autowired(required =  false)
-	private List<RemotingInterceptor> remotingInterceptors = new ArrayList<RemotingInterceptor>();
-	
 	@Autowired
 	private ServerChannelProvider serverChannelProvider;
 	
@@ -46,27 +36,21 @@ public class ExportedService {
 		if(serviceInterface == null) {
 			return null;
 		}
-		RemotingResponse response = new RemotingResponse();
 		try {
-			RemotingRequest request = mapper.readValue(in, RemotingRequest.class);
-			List<RemotingInterceptor> interceptors = remotingInterceptors; 
-			for(RemotingInterceptor ri : interceptors) {
-				ri.beforeHandle(request);
-			}
+			
+			RemotingRequest request = codec.decodeRequest(in);
+			
 			log.debug("Exported Service: <<< calling "+service.getClass().getSimpleName()+"."+request.getMethodName()+"()");
 			Object o = codec.invoke(serviceInterface,request, service);
 			log.debug("Exported Service: >>> returning result "+service.getClass().getSimpleName()+"."+request.getMethodName()+"()");
 			
-			for(RemotingInterceptor ri : interceptors) {
-				ri.afterHandle(request, response);
-			}
-			response.setSuccess(true);
-			response.setReturnValue(o);
+			return codec.createResponse(o, true, null);
+			
 		} catch (Exception e) {
 			log.info("Exported Service: >>> returning error "+service.getClass().getSimpleName());
 			log.warn("failed to invoke exported method: ",e);
+			return codec.createResponse(null, false, e);
 		}
-		return mapper.writeValueAsBytes(response);
 	}
 	
 	@PostConstruct

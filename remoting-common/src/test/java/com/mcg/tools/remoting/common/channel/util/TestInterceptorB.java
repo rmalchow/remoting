@@ -13,7 +13,7 @@ public class TestInterceptorB extends RemotingInterceptorAdapter {
 	}
 
 	@Override
-	public void afterHandle(RemotingRequest request, RemotingResponse response) {
+	public void afterHandle(RemotingResponse response) {
 		HeaderHolder.clear();
 	}
 	

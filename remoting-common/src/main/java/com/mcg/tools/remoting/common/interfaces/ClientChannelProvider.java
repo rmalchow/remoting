@@ -1,6 +1,4 @@
-package com.mcg.tools.remoting.common;
-
-import com.mcg.tools.remoting.common.io.ClientChannel;
+package com.mcg.tools.remoting.common.interfaces;
 
 public interface ClientChannelProvider {
 

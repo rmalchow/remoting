@@ -13,11 +13,11 @@ public class RemotingInterceptorAdapter implements RemotingInterceptor {
 	}
 	
 	@Override
-	public void afterHandle(RemotingRequest request, RemotingResponse response) {
+	public void afterHandle(RemotingResponse response) {
 	}
 	
 	@Override
-	public void afterReceive(RemotingRequest request, RemotingResponse response) {
+	public void afterReceive(RemotingResponse response) {
 	}
 	
 }

@@ -12,7 +12,7 @@ import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.boot.autoconfigure.jms.JmsProperties.DeliveryMode;
 
 import com.mcg.tools.remoting.api.annotations.RemotingException;
-import com.mcg.tools.remoting.common.io.ClientChannel;
+import com.mcg.tools.remoting.common.interfaces.ClientChannel;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.BuiltinExchangeType;

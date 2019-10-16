@@ -30,7 +30,6 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 		        new ClassGraph()
 		            .enableAllInfo()             // Scan classes, methods, fields, annotations
 		            .scan()) {                   // Start the scan
-
 			
 			for (ClassInfo classInfo : scanResult.getClassesWithAnnotation(RemoteEndpoint.class.getCanonicalName())) {
 		    	Class c = Class.forName(classInfo.getName());
@@ -46,12 +45,14 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 	    		
 	    		beanFactory.autowireBean(is);
 	    		
+	    		// we register the "ImportedService" as a bean, so we can get stuff autowired
 				GenericBeanDefinition bdSupplier = new GenericBeanDefinition();
 				bdSupplier.setBeanClassName(ImportedService.class.getCanonicalName());
 				bdSupplier.setInstanceSupplier(new ImportedServiceSupplier(is));
 				((DefaultListableBeanFactory) beanFactory).registerBeanDefinition(classInfo.getName()+"_importer", bdSupplier);				
 	    		log.info(c.getName()+" has NO implementation ... supplier registered");
 
+	    		// now we register the proxy (getProxy() of "ImportedService") as a bean
 				GenericBeanDefinition bdService = new GenericBeanDefinition();
 				bdService.setBeanClassName(classInfo.getName());
 				bdService.setInstanceSupplier(new ImportedServiceProxySupplier(is));
