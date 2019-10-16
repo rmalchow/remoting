@@ -10,7 +10,6 @@
 		<module>remoting-api</module>
 		<module>remoting-common</module>
 		<module>remoting-impl-amqp</module>
-		<module>remoting-impl-amqp-spring</module>
 		<module>remoting-examples</module>
 	</modules>
 	<properties>
