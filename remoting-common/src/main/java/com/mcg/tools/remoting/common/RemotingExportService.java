@@ -12,11 +12,13 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
 
 @Service
+@Order()
 public class RemotingExportService {
 
 	private static Log log = LogFactory.getLog(RemotingExportService.class);

@@ -2,6 +2,8 @@ package com.mcg.tools.remoting.common;
 
 import java.util.function.Supplier;
 
+import javax.sound.sampled.AudioSystem;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
@@ -9,8 +11,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Scope;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
@@ -20,6 +21,7 @@ import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
 
 @Service
+@Order()
 public class RemotingImportService implements BeanFactoryPostProcessor {
 
 	private static Log log = LogFactory.getLog(RemotingExportService.class);
@@ -33,12 +35,11 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 			
 			for (ClassInfo classInfo : scanResult.getClassesWithAnnotation(RemoteEndpoint.class.getCanonicalName())) {
 		    	Class c = Class.forName(classInfo.getName());
-		    	try {
-		    		beanFactory.getBean(c);
+	    		if(beanFactory.getBeanNamesForType(c).length > 0) {
 		    		log.info(c.getName()+" already has an implementation ... skipping");
 		    		continue;
-				} catch (Exception e) {
-				}
+	    		}
+
 	    		log.info(c.getName()+" has NO implementation ... adding bean definition ");
 
 	    		ImportedService is = new ImportedService(c);
@@ -64,6 +65,22 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 			log.error("error looking for remote endpoints ... ",e);
 		}
 	
+	}
+	
+	
+	private class ExistingBeanSupplier implements Supplier {
+		
+		private Object bean;
+		
+		public ExistingBeanSupplier(Object bean) {
+			this.bean = bean;
+		}
+		
+		@Override
+		public Object get() {
+			return bean;
+		}
+		
 	}
 	
 	private class ImportedServiceSupplier implements Supplier<ImportedService> {

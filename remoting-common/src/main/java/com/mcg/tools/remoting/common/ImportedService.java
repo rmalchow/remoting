@@ -8,8 +8,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,24 +63,19 @@ public class ImportedService implements InvocationHandler {
 
 			FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
 
-			log.debug("Importing Service: >>> calling " + serviceInterface.getSimpleName() + "." + method.getName()
-					+ "()");
+			log.debug("Importing Service: >>> calling " + serviceInterface.getSimpleName() + "." + method.getName() + "()");
 			executor.execute(t);
-			log.debug("Importing Service: <<< response received " + serviceInterface.getSimpleName() + "."
-					+ method.getName() + "()");
+			log.debug("Importing Service: <<< response received " + serviceInterface.getSimpleName() + "." + method.getName() + "()");
 
 			RemotingResponse response = t.get(timeout, TimeUnit.SECONDS);
-			log.debug("Importing Service: <<< response received " + serviceInterface.getSimpleName() + "."
-					+ method.getName() + "()");
+			log.debug("Importing Service: <<< response received " + serviceInterface.getSimpleName() + "." + method.getName() + "()");
 
-			if (!response.isSuccess())
-				throw new RuntimeException("REMOTE_CALL_FAILED");
+			if (!response.isSuccess()) throw new RuntimeException("REMOTE_CALL_FAILED");
 
 			return response.getReturnValue();
 
 		} catch (Throwable t) {
-			log.warn("RPC failed (" + t.getClass() + ") (timeout: " + timeout + ", elapsed: "
-					+ (System.currentTimeMillis() - start) + ")");
+			log.warn("RPC failed (" + t.getClass() + ") (timeout: " + timeout + ", elapsed: " + (System.currentTimeMillis() - start) + ")");
 			throw t;
 		}
 	}
