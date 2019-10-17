@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.mcg.tools.remoting.ex.server.api.services.PrintService;
 import com.mcg.tools.remoting.ex.server.api.services.RandomService;
 
 @Service
@@ -19,11 +20,14 @@ public class ClientService {
 	@Autowired
 	private RandomService randomService;
 	
+	@Autowired
+	private PrintService printService;
+	
 	@Scheduled(fixedDelay = 10000)
 	public void run() {
 		try {
 			log.info("my random number is: "+randomService.getNumber());
-			randomService.printSomething("client service says: "+UUID.randomUUID());
+			printService.printSomething("client service says: "+UUID.randomUUID());
 			
 			long s = 0;
 			

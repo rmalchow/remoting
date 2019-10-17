@@ -41,17 +41,15 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 				}
 	    		log.info(c.getName()+" has NO implementation ... adding bean definition ");
 
-	    		final ImportedService is = beanFactory.getBean(ImportedService.class, c);
-	    		
-	    		beanFactory.autowireBean(is);
+	    		ImportedService is = new ImportedService(c);
 	    		
 	    		// we register the "ImportedService" as a bean, so we can get stuff autowired
 				GenericBeanDefinition bdSupplier = new GenericBeanDefinition();
 				bdSupplier.setBeanClassName(ImportedService.class.getCanonicalName());
 				bdSupplier.setInstanceSupplier(new ImportedServiceSupplier(is));
-				((DefaultListableBeanFactory) beanFactory).registerBeanDefinition(classInfo.getName()+"_importer", bdSupplier);				
+				((DefaultListableBeanFactory) beanFactory).registerBeanDefinition(classInfo.getName()+"_configurer", bdSupplier);				
 	    		log.info(c.getName()+" has NO implementation ... supplier registered");
-
+	    		
 	    		// now we register the proxy (getProxy() of "ImportedService") as a bean
 				GenericBeanDefinition bdService = new GenericBeanDefinition();
 				bdService.setBeanClassName(classInfo.getName());
@@ -66,13 +64,6 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 			log.error("error looking for remote endpoints ... ",e);
 		}
 	
-	}
-	
-	@Bean
-	@Scope(scopeName = DefaultListableBeanFactory.SCOPE_PROTOTYPE)
-	public ImportedService importService(Class<?> service) {
-		ImportedService im = new ImportedService(service);
-		return im;
 	}
 	
 	private class ImportedServiceSupplier implements Supplier<ImportedService> {
@@ -105,10 +96,6 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 		}
 		
 	}
-	
-	
-	
-	
 	
 	
 	

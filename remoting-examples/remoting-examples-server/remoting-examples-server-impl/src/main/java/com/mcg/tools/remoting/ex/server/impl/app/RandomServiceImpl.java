@@ -18,11 +18,6 @@ public class RandomServiceImpl implements RandomService {
 		return (int)(Math.random()*100d);
 	}
 
-	@Override
-	public void printSomething(String s) {
-		log.info(s);
-	}
-
 	private void wait(int x) {
 		log.info("sleeping for "+x+" seconds ... ");
 		try {
