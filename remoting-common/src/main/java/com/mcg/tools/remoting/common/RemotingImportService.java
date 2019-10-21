@@ -1,31 +1,27 @@
 package com.mcg.tools.remoting.common;
 
-import java.util.function.Supplier;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
-import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
-
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ScanResult;
-
 @Service
-@Order(value = Ordered.LOWEST_PRECEDENCE)
-public class RemotingImportService implements BeanFactoryPostProcessor {
+@Configuration
+public class RemotingImportService {
 
 	private static Log log = LogFactory.getLog(RemotingExportService.class);
+	
+	@Bean
+	@Scope(scopeName = DefaultListableBeanFactory.SCOPE_PROTOTYPE)
+	public <T> ImportedServiceImpl<T> importService(Class<T> serviceInterface) {
+		log.info(" = = = = = importing service: "+serviceInterface.getName());
+		return new ImportedServiceImpl(serviceInterface);
+	}
 
+	/**
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
 		try (ScanResult scanResult =
@@ -38,6 +34,7 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 				Class c = Class.forName(classInfo.getName());
 				
 				boolean implFound = false;
+
 				for (ClassInfo classInfoImpl : scanResult.getClassesWithAnnotation(RemotingEndpoint.class.getCanonicalName())) {
 					Class cimpl = Class.forName(classInfoImpl.getName());
 					RemotingEndpoint re = (RemotingEndpoint)cimpl.getAnnotation(RemotingEndpoint.class);
@@ -84,7 +81,6 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 		}
 	
 	}
-	
 	private class ImportedServiceSupplier implements Supplier<ImportedService> {
 		
 		private ImportedService importedService;
@@ -114,6 +110,7 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 		}
 		
 	}
+	**/
 	
 	
 	

@@ -14,6 +14,10 @@
 			<artifactId>spring-context</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>com.mcg.tools</groupId>
 			<artifactId>remoting-api</artifactId>
 			<version>0.1.235-SNAPSHOT</version>

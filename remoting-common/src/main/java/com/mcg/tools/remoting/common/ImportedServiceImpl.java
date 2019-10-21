@@ -13,6 +13,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import com.mcg.tools.remoting.api.ImportedService;
 import com.mcg.tools.remoting.api.RemotingCodec;
 import com.mcg.tools.remoting.api.RemotingExecutor;
 import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
@@ -21,11 +22,11 @@ import com.mcg.tools.remoting.api.entities.RemotingResponse;
 import com.mcg.tools.remoting.common.interfaces.ClientChannel;
 import com.mcg.tools.remoting.common.interfaces.ClientChannelProvider;
 
-public class ImportedService implements InvocationHandler {
+public class ImportedServiceImpl<T> implements ImportedService<T>, InvocationHandler {
 
-	private static Log log = LogFactory.getLog(ImportedService.class);
+	private static Log log = LogFactory.getLog(ImportedServiceImpl.class);
 
-	private Class serviceInterface;
+	private Class<T> serviceInterface;
 	private Object proxy;
 
 	@Autowired
@@ -41,7 +42,7 @@ public class ImportedService implements InvocationHandler {
 	@Value(value = "${mcg.remoting.timeout:10}")
 	public long timeout;
 
-	public ImportedService(Class serviceInterface) {
+	public ImportedServiceImpl(Class<T> serviceInterface) {
 		this.serviceInterface = serviceInterface;
 	}
 
@@ -81,13 +82,18 @@ public class ImportedService implements InvocationHandler {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Object getProxy() {
-		if (proxy == null) {
-			log.info(" === CREATING PROXY FOR: " + serviceInterface);
-
-			proxy = Proxy.newProxyInstance(serviceInterface.getClassLoader(), new Class[] { serviceInterface }, this);
+	public T getProxy() {
+		
+		try {
+			if (proxy == null) {
+				log.info(" === CREATING PROXY FOR: " + serviceInterface);
+				proxy = Proxy.newProxyInstance(serviceInterface.getClassLoader(), new Class[] { serviceInterface }, this);
+			}
+			return (T)proxy;
+		} catch (Exception e) {
+			log.error("error creating proxy: ",e);
+			throw new RuntimeException(e);
 		}
-		return proxy;
 	}
 
 	public ClientChannel getClientChannel() {
