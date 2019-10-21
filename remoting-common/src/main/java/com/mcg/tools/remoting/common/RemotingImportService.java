@@ -14,6 +14,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
+import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
@@ -33,11 +34,29 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 		            .scan()) {                   // Start the scan
 			
 			for (ClassInfo classInfo : scanResult.getClassesWithAnnotation(RemoteEndpoint.class.getCanonicalName())) {
-		    	Class c = Class.forName(classInfo.getName());
-	    		if(beanFactory.getBeanNamesForType(c).length > 0) {
+
+				Class c = Class.forName(classInfo.getName());
+				
+				boolean implFound = false;
+				for (ClassInfo classInfoImpl : scanResult.getClassesWithAnnotation(RemotingEndpoint.class.getCanonicalName())) {
+					Class cimpl = Class.forName(classInfoImpl.getName());
+					RemotingEndpoint re = (RemotingEndpoint)cimpl.getAnnotation(RemotingEndpoint.class);
+					if(re.value().getName().equals(classInfoImpl.getName())) {
+						implFound = true;
+						break;
+					}
+				}
+
+				if(beanFactory.getBeanNamesForType(c).length > 0) {
+					implFound = true;
+				}
+				
+				if(implFound) {
 		    		log.info(c.getName()+" already has an implementation ... skipping");
 		    		continue;
-	    		}
+				}
+				
+				
 
 	    		log.info(c.getName()+" has NO implementation ... adding bean definition ");
 
@@ -66,22 +85,6 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 	
 	}
 	
-	
-	private class ExistingBeanSupplier implements Supplier {
-		
-		private Object bean;
-		
-		public ExistingBeanSupplier(Object bean) {
-			this.bean = bean;
-		}
-		
-		@Override
-		public Object get() {
-			return bean;
-		}
-		
-	}
-	
 	private class ImportedServiceSupplier implements Supplier<ImportedService> {
 		
 		private ImportedService importedService;
@@ -96,7 +99,6 @@ public class RemotingImportService implements BeanFactoryPostProcessor {
 		}
 		
 	}
-	
 	
 	private class ImportedServiceProxySupplier implements Supplier {
 		
