@@ -2,8 +2,6 @@ package com.mcg.tools.remoting.common;
 
 import java.util.function.Supplier;
 
-import javax.sound.sampled.AudioSystem;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
@@ -11,6 +9,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +20,7 @@ import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
 
 @Service
-@Order()
+@Order(value = Ordered.LOWEST_PRECEDENCE)
 public class RemotingImportService implements BeanFactoryPostProcessor {
 
 	private static Log log = LogFactory.getLog(RemotingExportService.class);
