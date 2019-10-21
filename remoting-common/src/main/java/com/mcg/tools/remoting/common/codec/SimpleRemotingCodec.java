@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,11 +30,21 @@ public class SimpleRemotingCodec implements RemotingCodec {
 	@Autowired(required =  false)
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	@Autowired(required =  false)
+	@Autowired
+	private ApplicationContext ctx;
+	
 	private List<RemotingInterceptor> remotingInterceptors = new ArrayList<RemotingInterceptor>();
 	
 	public SimpleRemotingCodec () {
 	}
+
+	private List<RemotingInterceptor> getInterceptors() {
+		if(remotingInterceptors == null) {
+		}
+		remotingInterceptors = new ArrayList<RemotingInterceptor>(ctx.getBeansOfType(RemotingInterceptor.class).values());
+		return remotingInterceptors;
+	}
+	
 	
 	private ObjectMapper getObjectMapper() {
 		if(objectMapper == null) {
@@ -91,8 +102,14 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			RemotingRequest out = new RemotingRequest();
 			out.setMethodName(m.getName());
 			out.setParams(args);
-			for(RemotingInterceptor ri : remotingInterceptors) {
+			List<RemotingInterceptor> interceptors = getInterceptors();
+			log.debug("invoking interceptors: "+interceptors.size());
+			for(RemotingInterceptor ri : interceptors) {
+				log.debug("invoking interceptor: "+ri.getClass().getName());
 				ri.beforeSend(out);
+			}
+			if(log.isDebugEnabled()) {
+				log.debug(getObjectMapper().writeValueAsString(out));
 			}
 			return getObjectMapper().writeValueAsBytes(out);
 		} catch (Exception e) {
@@ -105,7 +122,9 @@ public class SimpleRemotingCodec implements RemotingCodec {
 		try {
 			RemotingResponse out = getObjectMapper().readValue(response, RemotingResponse.class);
 
-			for(RemotingInterceptor ri : remotingInterceptors) {
+			List<RemotingInterceptor> interceptors = getInterceptors();
+			log.debug("invoking interceptors: "+interceptors.size());
+			for(RemotingInterceptor ri : interceptors) {
 				ri.afterReceive(out);
 			}
 			
@@ -121,7 +140,18 @@ public class SimpleRemotingCodec implements RemotingCodec {
 	@Override
 	public RemotingRequest decodeRequest(byte[] body) {
 		try {
-			return getObjectMapper().readValue(body, RemotingRequest.class);
+			if(log.isDebugEnabled()) {
+				log.debug(new String(body));
+			}
+			
+			RemotingRequest rr = getObjectMapper().readValue(body, RemotingRequest.class); 
+			
+			List<RemotingInterceptor> interceptors = getInterceptors();
+			log.debug("invoking interceptors: "+interceptors.size());
+			for(RemotingInterceptor ri : interceptors) {
+				ri.beforeHandle(rr);
+			}
+			return rr; 
 		} catch (Exception e) {
 			throw new RuntimeException("error reading request", e);
 		}
@@ -133,8 +163,9 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			RemotingResponse rr = new RemotingResponse();
 			rr.setSuccess(success);
 			rr.setReturnValue(returnValue);
-			// ignore exceptions for now rr.set
-			for(RemotingInterceptor ri : remotingInterceptors) {
+			List<RemotingInterceptor> interceptors = getInterceptors();
+			log.debug("invoking interceptors: "+interceptors.size());
+			for(RemotingInterceptor ri : interceptors) {
 				ri.afterHandle(rr);
 			}
 			return getObjectMapper().writeValueAsBytes(rr);
