@@ -19,8 +19,8 @@ public class RandomServiceConfig {
 	@Autowired
 	private ApplicationContext ctx;
 	
-	@Bean
-	@ConditionalOnMissingBean
+	//@Bean
+	//@ConditionalOnMissingBean
 	public RandomService randomService() throws RemotingException {
 		ImportedService<RandomService> s = ctx.getBean(ImportedService.class, RandomService.class); 
 		log.info("imported service is: "+s);

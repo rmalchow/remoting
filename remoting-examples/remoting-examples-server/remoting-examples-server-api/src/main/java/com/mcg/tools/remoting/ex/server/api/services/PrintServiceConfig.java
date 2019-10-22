@@ -19,8 +19,8 @@ public class PrintServiceConfig {
 	@Autowired
 	private ApplicationContext ctx;
 	
-	@Bean
-	@ConditionalOnMissingBean
+	//@Bean
+	//@ConditionalOnMissingBean
 	public PrintService printService() throws RemotingException {
 		
 		ImportedService<PrintService> s = ctx.getBean(ImportedService.class, PrintService.class); 
