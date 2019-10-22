@@ -77,6 +77,8 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			}
 		}
 		if(method!=null) {
+			log.debug("target: "+target.getClass()+" / "+method.getName());
+			log.debug("interface: "+serviceInterface);
 			return method.invoke(target, params);
 		}
 		
