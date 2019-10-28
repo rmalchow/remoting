@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.mcg.tools</groupId>
 		<artifactId>remoting-examples-server</artifactId>
-		<version>0.1.239-SNAPSHOT</version>
+		<version>0.1.240-SNAPSHOT</version>
 	</parent>
 	<artifactId>remoting-examples-server-api</artifactId>
 	<dependencies>
@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>com.mcg.tools</groupId>
 			<artifactId>remoting-api</artifactId>
-			<version>0.1.239-SNAPSHOT</version>
+			<version>0.1.240-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 </project>
