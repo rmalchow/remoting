@@ -18,7 +18,6 @@ import org.springframework.util.ReflectionUtils;
 
 import com.mcg.tools.remoting.api.ImportedService;
 import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
-import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
 
 @Service
 @Configuration

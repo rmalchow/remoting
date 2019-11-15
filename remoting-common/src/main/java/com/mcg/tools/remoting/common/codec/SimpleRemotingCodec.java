@@ -76,17 +76,28 @@ public class SimpleRemotingCodec implements RemotingCodec {
 				log.warn("error trying to conform parameters.",e);
 			}
 		}
+		
+		if(method == null) {
+			throw new IllegalAccessException("no such method in service");
+		}
+		
 		if(method!=null) {
 			log.debug("target: "+target.getClass()+" / "+method.getName());
 			log.debug("interface: "+serviceInterface);
 			try {
-				return method.invoke(target, params);
+				for(Method m2 : target.getClass().getMethods()) {
+					
+					return method.invoke(target, params);
+					
+				}
 			} catch (Exception e) {
 				log.error("error invoking method: { interface: "+serviceInterface.getName()+", object: "+target.getClass()+", method: "+method.getName()+"}",e);
+				log.error("interface: "+serviceInterface.getClassLoader());
+				log.error("   target: "+target.getClass().getClassLoader());
 			}
 		}
 		
-		throw new NoSuchMethodException();
+		throw new NoSuchMethodException("no matchin method ("+request.getMethodName()+") in interface "+serviceInterface.getName());
 	}
 
 	protected Object[] conform(Object[] args, Parameter[] parameters) throws JsonParseException, JsonMappingException, IOException {
@@ -173,6 +184,9 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			log.debug("invoking interceptors: "+interceptors.size());
 			for(RemotingInterceptor ri : interceptors) {
 				ri.afterHandle(rr);
+			}
+			if(e!=null) {
+				rr.exception(e);
 			}
 			return getObjectMapper().writeValueAsBytes(rr);
 		} catch (Exception ex) {

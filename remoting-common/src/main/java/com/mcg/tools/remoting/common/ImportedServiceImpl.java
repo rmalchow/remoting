@@ -71,7 +71,12 @@ public class ImportedServiceImpl<T> implements ImportedService<T>, InvocationHan
 			RemotingResponse response = t.get(timeout, TimeUnit.SECONDS);
 			log.debug("Importing Service: <<< response received " + serviceInterface.getSimpleName() + "." + method.getName() + "()");
 
-			if (!response.isSuccess()) throw new RuntimeException("REMOTE_CALL_FAILED");
+			if (!response.isSuccess()) {
+				for(String s: response.getStackTrace()) {
+					log.error(s);
+				}
+				throw new RuntimeException("REMOTE_CALL_FAILED");
+			}
 
 			return response.getReturnValue();
 

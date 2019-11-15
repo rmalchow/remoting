@@ -12,6 +12,7 @@ import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
 import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
 import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.api.entities.RemotingRequest;
+import com.mcg.tools.remoting.common.codec.SimpleRemotingCodec;
 import com.mcg.tools.remoting.common.interfaces.ServerChannelProvider;
 import com.mcg.tools.remoting.common.util.CglibHelper;
 
@@ -82,7 +83,16 @@ public class ExportedService {
 			throw new RemotingException("EMPTY_SERVICE_NAME", null);
 		}
 
-		this.serviceInterface = c;
+		for(Class<?> ci : service.getClass().getInterfaces()) {
+			if(ci.getName() != c.getName()) continue;
+			if(!(ci.isAssignableFrom(service.getClass()))) continue;
+			this.serviceInterface = ci;
+			break;
+		}
+
+		if(this.serviceInterface == null) {
+			throw new RemotingException("INTERFACE_NOT_FOUND: "+c.getClass(), null);
+		}
 		
 		serverChannelProvider.createServerChannel(appname,servicename,this);  
 		
