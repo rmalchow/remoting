@@ -1,7 +1,5 @@
 package com.mcg.tools.remoting.common;
 
-import java.lang.reflect.Field;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
@@ -14,10 +12,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ReflectionUtils;
-
-import com.mcg.tools.remoting.api.ImportedService;
-import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
 
 @Service
 @Configuration
@@ -26,7 +20,7 @@ public class RemotingImportService implements BeanPostProcessor, Ordered, Applic
 	private static Log log = LogFactory.getLog(RemotingImportService.class);
 
 	private ApplicationContext applicationContext;
-	
+
 	@Bean
 	@Scope(scopeName = DefaultListableBeanFactory.SCOPE_PROTOTYPE)
 	public <T> ImportedServiceImpl<T> importService(Class<T> serviceInterface) {
@@ -46,7 +40,7 @@ public class RemotingImportService implements BeanPostProcessor, Ordered, Applic
 
 	@Override
 	public Object postProcessBeforeInitialization(final Object bean, final String beanName) throws BeansException {	
-	    
+	    /**
 		final Class<?> clazz = bean.getClass();
 
 	    ReflectionUtils.doWithFields(clazz, new ReflectionUtils.FieldCallback() {
@@ -79,7 +73,7 @@ public class RemotingImportService implements BeanPostProcessor, Ordered, Applic
 	            }
 	        }
 	    });
-
+	     **/
 	    return bean;
 	}
 	

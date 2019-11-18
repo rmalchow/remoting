@@ -7,9 +7,6 @@ import javax.annotation.PostConstruct;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.aop.framework.Advised;
-import org.springframework.aop.framework.AopProxyUtils;
-import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
@@ -38,8 +35,7 @@ public class RemotingExportService {
 		ExportedService ex = new ExportedService(service);
 		return ex;
 	}
-	
-	
+
 	@PostConstruct
 	public void init() {
 		for(String s : ctx.getBeanNamesForAnnotation(RemotingEndpoint.class)) {
@@ -49,6 +45,7 @@ public class RemotingExportService {
 				CglibHelper h = new CglibHelper(o);
 				o = h.getTargetObject();
 			} catch (Exception e) {
+				log.warn("error getting proxied instance: "+e.getMessage());
 			}
 			try {
 				ExportedService es = ctx.getBean(ExportedService.class, o);
