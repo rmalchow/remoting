@@ -23,7 +23,7 @@ import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
 @Configuration
 public class RemotingImportService implements BeanPostProcessor, Ordered, ApplicationContextAware {
 
-	private static Log log = LogFactory.getLog(RemotingExportService.class);
+	private static Log log = LogFactory.getLog(RemotingImportService.class);
 
 	private ApplicationContext applicationContext;
 	
@@ -47,8 +47,6 @@ public class RemotingImportService implements BeanPostProcessor, Ordered, Applic
 	@Override
 	public Object postProcessBeforeInitialization(final Object bean, final String beanName) throws BeansException {	
 	    
-		log.debug("postprocessing: "+bean.getClass());
-		
 		final Class<?> clazz = bean.getClass();
 
 	    ReflectionUtils.doWithFields(clazz, new ReflectionUtils.FieldCallback() {
@@ -59,20 +57,15 @@ public class RemotingImportService implements BeanPostProcessor, Ordered, Applic
 	            	Class<?> s = field.getType();
 	            	ReflectionUtils.makeAccessible(field);
 
-	            	log.debug("postprocessing: "+bean.getClass()+" --- "+field.getName()+" / "+s.getName());
-
 	            	if(field.get(bean) != null) {
-	            		log.debug("postprocessing: "+bean.getClass()+" / not null, already wired");
 	            		return; // not a remoting service
 	            	}
 	            	
 	            	if(s.getAnnotation(RemoteEndpoint.class) == null) {
-	            		log.debug("postprocessing: "+bean.getClass()+" / not a remoting endpoint");
 	            		return; // not a remoting service
 	            	}
 	            	
 	            	if(applicationContext.getBeanNamesForType(s).length > 0) {
-	            		log.debug("postprocessing: "+bean.getClass()+" / already wired");
 	            		return; // already there
 	            	}
 
@@ -86,7 +79,6 @@ public class RemotingImportService implements BeanPostProcessor, Ordered, Applic
 	            }
 	        }
 	    });
-        log.debug("postprocessing done!");
 
 	    return bean;
 	}
