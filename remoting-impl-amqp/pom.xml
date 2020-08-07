@@ -4,14 +4,14 @@
 	<parent>
 		<groupId>com.mcg.tools</groupId>
 		<artifactId>remoting</artifactId>
-		<version>0.1.244-SNAPSHOT</version>
+		<version>0.1.244</version>
 	</parent>
 	<artifactId>remoting-impl-amqp</artifactId>
 	<dependencies>
 		<dependency>
 			<groupId>com.mcg.tools</groupId>
 			<artifactId>remoting-common</artifactId>
-			<version>0.1.244-SNAPSHOT</version>
+			<version>0.1.244</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
