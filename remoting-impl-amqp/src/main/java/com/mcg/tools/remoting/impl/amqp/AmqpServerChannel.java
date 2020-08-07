@@ -81,7 +81,7 @@ public class AmqpServerChannel implements ServerChannel{
 	}
 	
 	public void start(Connection connection) {
-		if(this.connection == null || this.connection!= connection) listen(connection);
+		listen(connection);
 	}
 
 	
