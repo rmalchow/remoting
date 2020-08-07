@@ -19,7 +19,7 @@ import com.mcg.tools.remoting.common.interfaces.ServerChannel;
 import com.mcg.tools.remoting.common.interfaces.ServerChannelProvider;
 
 @Component
-public class AmqpServerChannelProvider implements ServerChannelProvider {
+public class AmqpServerChannelProvider implements ServerChannelProvider, ConnectionListener {
 	
 	private static Log log = LogFactory.getLog(AmqpServerChannelProvider.class);
 
@@ -44,25 +44,24 @@ public class AmqpServerChannelProvider implements ServerChannelProvider {
 		}
 	}
 	
+	public void onCreate(Connection connection) {
+		AmqpServerChannelProvider.this.connection = connection;
+		listen();
+	}
+	
+	public void onClose(Connection connection) {
+		try {
+			Thread.sleep(1000);
+		} catch (Exception e) {
+		}
+		connectionFactory.createConnection();
+	};
 	
 	@PostConstruct
 	public void init() {
 		CachingConnectionFactory ccf = (CachingConnectionFactory)connectionFactory;
-		connection = ccf.createConnection();
-		ccf.addConnectionListener(
-			new ConnectionListener() {
-				
-				@Override
-				public void onCreate(Connection connection) {
-					AmqpServerChannelProvider.this.connection = connection;
-					listen();
-				}
-				
-				public void onClose(Connection connection) {
-					ccf.createConnection();
-				};
-			}
-		);
+		ccf.addConnectionListener(this);
+		ccf.createConnection();
 	}
 
 
