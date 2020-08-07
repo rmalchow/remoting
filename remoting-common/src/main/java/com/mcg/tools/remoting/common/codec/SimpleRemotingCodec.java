@@ -78,7 +78,7 @@ public class SimpleRemotingCodec implements RemotingCodec {
 		}
 		
 		if(method == null) {
-			throw new IllegalAccessException("no such method in service");
+			throw new IllegalAccessException("no such method ("+name+") in service");
 		}
 		
 		if(method!=null) {

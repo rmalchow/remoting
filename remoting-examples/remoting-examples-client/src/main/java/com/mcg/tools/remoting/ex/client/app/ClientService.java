@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +17,10 @@ public class ClientService {
 	private static Log log = LogFactory.getLog(ClientService.class);
 	
 
-	@Autowired(required = false)
+	@Autowired()
 	private RandomService randomService;
 	
-	@Autowired(required = false)
+	@Autowired()
 	private PrintService printService;
 	
 	@Scheduled(fixedDelay = 10000)

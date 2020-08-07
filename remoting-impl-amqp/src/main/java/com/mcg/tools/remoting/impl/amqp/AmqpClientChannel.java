@@ -8,15 +8,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.boot.autoconfigure.jms.JmsProperties.DeliveryMode;
 
 import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.common.interfaces.ClientChannel;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ReturnListener;
@@ -47,12 +48,24 @@ public class AmqpClientChannel implements ClientChannel {
 
 	@Override
 	public byte[] invoke(byte[] in) throws Exception {
-		String correlationId = UUID.randomUUID().toString();
-		BasicProperties props = new BasicProperties.Builder().replyTo(routingKey).correlationId(correlationId).deliveryMode(DeliveryMode.PERSISTENT.getValue()).build();
-		BlockingCell<byte[]> bc = new BlockingCell<>();
-		requestMap.put(correlationId, bc);
-		clientChannel.basicPublish(exchangeName, "request", true, props, in);
-		return bc.get();
+		try {
+			
+			String correlationId = UUID.randomUUID().toString();
+			BasicProperties props = new BasicProperties.Builder().replyTo(routingKey).correlationId(correlationId).deliveryMode(DeliveryMode.PERSISTENT.getValue()).build();
+			BlockingCell<byte[]> bc = new BlockingCell<>();
+			requestMap.put(correlationId, bc);
+			clientChannel.basicPublish(exchangeName, "request", true, props, in);
+			return bc.get();
+		} catch (AlreadyClosedException ace) {
+			try {
+				connection.close();
+			} catch (Exception e) {
+			}
+			throw ace;
+		} catch (Exception e) {
+			log.error("error in client");
+			throw e;
+		}
 	}
 	
 	private void listen(Connection connection) {
@@ -67,7 +80,7 @@ public class AmqpClientChannel implements ClientChannel {
 			this.exchangeName = app + ":" + service;
 			this.responseQueueName = app+":"+service+":response-"+routingKey;
 			
-			this.clientChannel = connection.createChannel(false);
+			this.clientChannel = connection.createChannel();
 			this.clientChannel.exchangeDeclare(exchangeName, BuiltinExchangeType.DIRECT, true, false, new HashMap<>());
 			this.clientChannel.queueDeclare(responseQueueName, false, true, true, new HashMap<>());
 			this.clientChannel.queueBind(responseQueueName, exchangeName, routingKey);
@@ -115,7 +128,11 @@ public class AmqpClientChannel implements ClientChannel {
 	}
 	
 	public void start(Connection connection) {
-		if(this.connection == null || this.connection != connection) listen(connection);
+		if(connection == this.connection) return;
+		this.connection = connection;
+		if(connection == null) return;
+		log.info("CLIENT: new connection: recreating channels");
+		listen(connection);
 	}
 	
 

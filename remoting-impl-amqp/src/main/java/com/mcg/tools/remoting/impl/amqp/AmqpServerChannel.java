@@ -6,7 +6,7 @@ import java.util.HashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.amqp.rabbit.connection.Connection;
+import com.rabbitmq.client.Connection;
 
 import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.common.ExportedService;
@@ -31,6 +31,9 @@ public class AmqpServerChannel implements ServerChannel{
 	private String exchangeName;
 	private String requestQueueName;
 	
+	private Connection connection;
+	
+	
 	public AmqpServerChannel(String app, String service, ExportedService exportedService) {
 		this.app = app;
 		this.service = service;
@@ -47,7 +50,7 @@ public class AmqpServerChannel implements ServerChannel{
 			this.exchangeName = app + ":" + service;
 			this.requestQueueName = app+":"+service+":request";
 			
-			this.serverChannel = connection.createChannel(false);
+			this.serverChannel = connection.createChannel();
 			this.serverChannel.exchangeDeclare(exchangeName, BuiltinExchangeType.DIRECT, true, false, new HashMap<>());
 			this.serverChannel.queueDeclare(requestQueueName, false, false, true, new HashMap<>());
 			this.serverChannel.queueBind(requestQueueName, exchangeName, "request");
@@ -79,6 +82,10 @@ public class AmqpServerChannel implements ServerChannel{
 	}
 	
 	public void start(Connection connection) {
+		if(connection == this.connection) return;
+		this.connection = connection;
+		if(connection == null) return;
+		log.info("SERVER: new connection: recreating channels");
 		listen(connection);
 	}
 
