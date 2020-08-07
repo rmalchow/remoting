@@ -63,10 +63,10 @@ public class AmqpServerChannelProvider implements ServerChannelProvider, Connect
 	@PostConstruct
 	public void init() {
 		CachingConnectionFactory ccf = (CachingConnectionFactory)connectionFactory;
+		com.rabbitmq.client.ConnectionFactory cf = ccf.getRabbitConnectionFactory();
+		cf.setAutomaticRecoveryEnabled(true);
+		cf.setTopologyRecoveryEnabled(true);
 		ccf.addConnectionListener(this);
 		ccf.createConnection();
 	}
-
-
-
 }
