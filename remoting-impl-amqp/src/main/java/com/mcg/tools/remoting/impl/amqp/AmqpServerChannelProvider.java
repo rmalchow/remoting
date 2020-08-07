@@ -40,17 +40,20 @@ public class AmqpServerChannelProvider implements ServerChannelProvider, Connect
 	
 	public void listen() {
 		for(AmqpServerChannel sc : serverChannels) {
+			log.info("connection openend: "+sc.getExportedService().getClass());
 			sc.start(connection);
 		}
 	}
 	
 	public void onCreate(Connection connection) {
 		AmqpServerChannelProvider.this.connection = connection;
+		log.info("connection openend - restartign exported services ... ");
 		listen();
 	}
 	
 	public void onClose(Connection connection) {
 		try {
+			log.info("connection closed - reconnecting ... ");
 			Thread.sleep(1000);
 		} catch (Exception e) {
 		}

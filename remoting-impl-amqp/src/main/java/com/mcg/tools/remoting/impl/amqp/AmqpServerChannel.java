@@ -22,8 +22,6 @@ public class AmqpServerChannel implements ServerChannel{
 
 	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
 	
-	private Connection connection;
-	
 	private Channel serverChannel;
 
 	private String app;
@@ -36,7 +34,7 @@ public class AmqpServerChannel implements ServerChannel{
 	public AmqpServerChannel(String app, String service, ExportedService exportedService) {
 		this.app = app;
 		this.service = service;
-		this.exportedService = exportedService;
+		this.setExportedService(exportedService);
 	}
 
 	private void listen(Connection connection) {
@@ -59,7 +57,7 @@ public class AmqpServerChannel implements ServerChannel{
 				public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
 					try {
 
-						byte[] responseBody = exportedService.handle(body);
+						byte[] responseBody = getExportedService().handle(body);
 						String correlationId = properties.getCorrelationId();
 						String routingKey = properties.getReplyTo();
 						BasicProperties props = new BasicProperties.Builder().correlationId(correlationId).build();
@@ -84,5 +82,14 @@ public class AmqpServerChannel implements ServerChannel{
 		listen(connection);
 	}
 
+	public ExportedService getExportedService() {
+		return exportedService;
+	}
+
+	public void setExportedService(ExportedService exportedService) {
+		this.exportedService = exportedService;
+	}
+
+	
 	
 }
