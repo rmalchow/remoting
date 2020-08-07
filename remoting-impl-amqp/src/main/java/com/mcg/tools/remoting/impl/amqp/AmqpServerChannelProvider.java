@@ -69,6 +69,8 @@ public class AmqpServerChannelProvider implements ServerChannelProvider {
 		cf = ccf.getRabbitConnectionFactory();
 		cf.setAutomaticRecoveryEnabled(false);
 
+		reconnect();
+		
 		ste.scheduleWithFixedDelay(
 			new Runnable() {
 				

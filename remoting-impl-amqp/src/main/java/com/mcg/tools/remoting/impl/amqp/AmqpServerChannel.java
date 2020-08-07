@@ -85,7 +85,7 @@ public class AmqpServerChannel implements ServerChannel{
 		if(connection == this.connection) return;
 		this.connection = connection;
 		if(connection == null) return;
-		log.info("SERVER: new connection: recreating channels");
+		log.info("SERVER ("+app+":"+service+"): new connection: recreating channels");
 		listen(connection);
 	}
 

@@ -67,6 +67,7 @@ public class AmqpClientChannelProvider implements ClientChannelProvider {
 		CachingConnectionFactory ccf = (CachingConnectionFactory)connectionFactory;
 		cf = ccf.getRabbitConnectionFactory();
 		cf.setAutomaticRecoveryEnabled(false);
+		reconnect();
 
 		ste.scheduleWithFixedDelay(
 			new Runnable() {

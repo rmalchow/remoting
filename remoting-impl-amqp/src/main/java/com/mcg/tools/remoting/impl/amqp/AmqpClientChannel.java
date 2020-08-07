@@ -131,7 +131,7 @@ public class AmqpClientChannel implements ClientChannel {
 		if(connection == this.connection) return;
 		this.connection = connection;
 		if(connection == null) return;
-		log.info("CLIENT: new connection: recreating channels");
+		log.info("CLIENT ("+app+":"+service+") : new connection: recreating channels");
 		listen(connection);
 	}
 	
