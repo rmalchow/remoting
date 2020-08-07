@@ -71,8 +71,6 @@ public class AmqpServerChannelProvider implements ServerChannelProvider, Connect
 		CachingConnectionFactory ccf = (CachingConnectionFactory)connectionFactory;
 		com.rabbitmq.client.ConnectionFactory cf = ccf.getRabbitConnectionFactory();
 		parentHandler = cf.getExceptionHandler();
-		cf.setAutomaticRecoveryEnabled(true);
-		cf.setTopologyRecoveryEnabled(true);
 		cf.setExceptionHandler(this);
 		ccf.addConnectionListener(this);
 		ccf.createConnection();
@@ -93,18 +91,21 @@ public class AmqpServerChannelProvider implements ServerChannelProvider, Connect
 	@Override
 	public void handleReturnListenerException(Channel channel, Throwable exception) {
 		// TODO Auto-generated method stub
+		log.info("connection exception: ",exception);
 		parentHandler.handleReturnListenerException(channel, exception);
 	}
 
 	@Override
 	public void handleConfirmListenerException(Channel channel, Throwable exception) {
 		// TODO Auto-generated method stub
+		log.info("connection exception: ",exception);
 		parentHandler.handleConfirmListenerException(channel, exception);
 	}
 
 	@Override
 	public void handleBlockedListenerException(com.rabbitmq.client.Connection connection, Throwable exception) {
 		// TODO Auto-generated method stub
+		log.info("connection exception: ",exception);
 		parentHandler.handleBlockedListenerException(connection, exception);
 	}
 
@@ -112,11 +113,13 @@ public class AmqpServerChannelProvider implements ServerChannelProvider, Connect
 	public void handleConsumerException(Channel channel, Throwable exception, Consumer consumer, String consumerTag,
 			String methodName) {
 		// TODO Auto-generated method stub
+		log.info("connection exception: ",exception);
 		parentHandler.handleConsumerException(channel, exception, consumer, consumerTag, methodName);
 	}
 
 	@Override
 	public void handleConnectionRecoveryException(com.rabbitmq.client.Connection conn, Throwable exception) {
+		log.info("connection exception: ",exception);
 		try {
 			this.connection.close();
 		} catch (Exception e) {
@@ -129,6 +132,7 @@ public class AmqpServerChannelProvider implements ServerChannelProvider, Connect
 
 	@Override
 	public void handleChannelRecoveryException(Channel ch, Throwable exception) {
+		log.info("connection exception: ",exception);
 		try {
 			this.connection.close();
 		} catch (Exception e) {
@@ -141,6 +145,7 @@ public class AmqpServerChannelProvider implements ServerChannelProvider, Connect
 
 	@Override
 	public void handleTopologyRecoveryException(com.rabbitmq.client.Connection conn, Channel ch, TopologyRecoveryException exception) {
+		log.info("connection exception: ",exception);
 		try {
 			this.connection.close();
 		} catch (Exception e) {
