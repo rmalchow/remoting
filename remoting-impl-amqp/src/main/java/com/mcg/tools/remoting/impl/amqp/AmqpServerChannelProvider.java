@@ -10,6 +10,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -48,8 +49,20 @@ public class AmqpServerChannelProvider implements ServerChannelProvider {
 	public void init() {
 		CachingConnectionFactory ccf = (CachingConnectionFactory)connectionFactory;
 		connection = ccf.createConnection();
-		ccf.getRabbitConnectionFactory().setAutomaticRecoveryEnabled(true);
-		listen();
+		ccf.addConnectionListener(
+			new ConnectionListener() {
+				
+				@Override
+				public void onCreate(Connection connection) {
+					AmqpServerChannelProvider.this.connection = connection;
+					listen();
+				}
+				
+				public void onClose(Connection connection) {
+					ccf.createConnection();
+				};
+			}
+		);
 	}
 
 
