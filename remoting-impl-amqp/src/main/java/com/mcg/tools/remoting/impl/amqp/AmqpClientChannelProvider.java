@@ -41,6 +41,14 @@ public class AmqpClientChannelProvider implements ClientChannelProvider {
 	public ClientChannel createClientChannel(String app, String service) {
 		AmqpClientChannel s = new AmqpClientChannel(app, service);
 		clientChannels.add(s);
+		try {
+			if(connection!=null) {
+				listen();
+			} else {
+				reconnect();
+			}
+		} catch (Exception e) {
+		}
 		return s;
 	}
 	
