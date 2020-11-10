@@ -97,7 +97,7 @@ public class AmqpClientChannel implements ClientChannel {
 
 					BlockingCell<byte[]> bc = requestMap.get(properties.getCorrelationId());
 					if(bc!=null) {
-						log.warn("no consumer available!");
+						log.warn("no consumer available! (exchangeName: "+AmqpClientChannel.this.exchangeName+", responseQueue: "+AmqpClientChannel.this.responseQueueName+")");
 						bc.set(new byte[] {});
 					} else {
 						log.warn(" ---- unknown correlation id: "+properties.getCorrelationId());
