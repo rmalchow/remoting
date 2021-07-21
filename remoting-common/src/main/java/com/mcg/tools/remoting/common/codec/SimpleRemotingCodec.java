@@ -64,13 +64,26 @@ public class SimpleRemotingCodec implements RemotingCodec {
 		Method method = null;
 		Object[] params = null;
 		for(Method m : serviceInterface.getMethods()) {
-			if(m.getName().compareTo(name)!=0) continue;
-			if(m.getParameterCount()!=paramCount) continue;
+			if(m.getName().compareTo(name)!=0) {
+				if(log.isDebugEnabled()) {
+					log.debug("incorrect method name: "+m.getName()+" != "+name);
+				}
+				continue;
+			}
+			if(m.getParameterCount()!=paramCount) {
+				if(log.isDebugEnabled()) {
+					log.debug("incorrect parameter count: "+m.getParameterCount()+" != "+paramCount);
+				}
+				continue;
+			}
 			try {
 				params = conform(args,m.getParameters());
 				method = m;
 				break;
 			} catch (JsonMappingException e) {
+				if(log.isDebugEnabled()) {
+					log.debug("cannot conform: "+m.getParameters()+" != "+args);
+				}
 				// cannot conform this, might just be same method name
 			} catch (Exception e) {
 				log.warn("error trying to conform parameters.",e);
@@ -86,9 +99,7 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			log.debug("interface: "+serviceInterface);
 			try {
 				for(Method m2 : target.getClass().getMethods()) {
-					
 					return method.invoke(target, params);
-					
 				}
 			} catch (Exception e) {
 				log.error("error invoking method: { interface: "+serviceInterface.getName()+", object: "+target.getClass()+", method: "+method.getName()+"}",e);
