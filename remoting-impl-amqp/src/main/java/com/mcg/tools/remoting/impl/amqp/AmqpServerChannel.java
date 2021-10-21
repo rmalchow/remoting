@@ -66,7 +66,7 @@ public class AmqpServerChannel implements ServerChannel{
 						BasicProperties props = new BasicProperties.Builder().correlationId(correlationId).build();
 						long deliveryTag = envelope.getDeliveryTag();
 						getChannel().basicAck(deliveryTag, false);
-						log.info("responding: ("+app+":"+service+":"+routingKey+")");
+						log.debug("responding: ("+app+":"+service+":"+routingKey+")");
 						getChannel().basicPublish(app+":"+service, routingKey, props, responseBody);
 					} catch (Exception e) {
 						throw new IOException(e);
