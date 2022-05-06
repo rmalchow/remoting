@@ -105,11 +105,11 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			log.debug("interface: "+serviceInterface);
 			try {
 				return method.invoke(target, params);
-			} catch (Throwable e) {
+			} catch (Exception e) {
 				log.error("error invoking method: { interface: "+serviceInterface.getName()+", object: "+target.getClass()+", method: "+method.getName()+"}",e);
 				log.error("interface: "+serviceInterface.getClassLoader());
 				log.error("   target: "+target.getClass().getClassLoader());
-				throw new InvocationTargetException(e);
+				throw e;
 			}
 		}
 	}
