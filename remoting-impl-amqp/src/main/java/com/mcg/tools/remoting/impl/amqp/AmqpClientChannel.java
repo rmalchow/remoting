@@ -55,7 +55,8 @@ public class AmqpClientChannel implements ClientChannel {
 			BlockingCell<byte[]> bc = new BlockingCell<>();
 			requestMap.put(correlationId, bc);
 			clientChannel.basicPublish(exchangeName, "request", true, props, in);
-			return bc.get();
+			byte[] buff = bc.get();
+			return buff;
 		} catch (AlreadyClosedException ace) {
 			try {
 				connection.close();
@@ -112,9 +113,9 @@ public class AmqpClientChannel implements ClientChannel {
 					long deliveryTag = envelope.getDeliveryTag();
 					getChannel().basicAck(deliveryTag, false);
 
-					BlockingCell<byte[]> bc = requestMap.get(properties.getCorrelationId());
+					BlockingCell<byte[]> bc = requestMap.remove(properties.getCorrelationId());
 					if(bc!=null) {
-				    		bc.set(body);
+			    		bc.set(body);
 					} else {
 						log.warn(" ---- unknown correlation id: "+properties.getCorrelationId());
 					}
