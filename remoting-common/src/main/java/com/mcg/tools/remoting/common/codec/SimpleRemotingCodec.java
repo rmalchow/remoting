@@ -61,8 +61,8 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			args = new Object[] {};
 		}
 		int paramCount = args.length;
-		Method method = null;
-		Object[] params = null;
+		
+		List<Method> methods = new ArrayList<>();
 		for(Method m : serviceInterface.getMethods()) {
 			if(m.getName().compareTo(name)!=0) {
 				if(log.isDebugEnabled()) {
@@ -76,39 +76,42 @@ public class SimpleRemotingCodec implements RemotingCodec {
 				}
 				continue;
 			}
+			methods.add(m);
+		}
+		
+		if(methods.size()<1) {
+			throw new NoSuchMethodException("cannot find method ("+request.getMethodName()+") with ("+paramCount+") parameters in interface "+serviceInterface.getName());
+		}
+		
+		Method method = null;
+		Object[] params = null;
+
+		for(Method m : methods) {
 			try {
 				params = conform(args,m.getParameters());
 				method = m;
 				break;
-			} catch (JsonMappingException e) {
+			} catch (Exception e) {
 				if(log.isDebugEnabled()) {
 					log.debug("cannot conform: "+m.getParameters()+" != "+args);
 				}
-				// cannot conform this, might just be same method name
-			} catch (Exception e) {
-				log.warn("error trying to conform parameters.",e);
 			}
 		}
 		
 		if(method == null) {
-			throw new IllegalAccessException("no such method ("+name+") in service");
-		}
-		
-		if(method!=null) {
+			throw new IllegalArgumentException("cannot conform params of ("+request.getMethodName()+") in interface "+serviceInterface.getName());
+		} else {
 			log.debug("target: "+target.getClass()+" / "+method.getName());
 			log.debug("interface: "+serviceInterface);
 			try {
-				for(Method m2 : target.getClass().getMethods()) {
-					return method.invoke(target, params);
-				}
+				return method.invoke(target, params);
 			} catch (Exception e) {
 				log.error("error invoking method: { interface: "+serviceInterface.getName()+", object: "+target.getClass()+", method: "+method.getName()+"}",e);
 				log.error("interface: "+serviceInterface.getClassLoader());
 				log.error("   target: "+target.getClass().getClassLoader());
+				throw e;
 			}
 		}
-		
-		throw new NoSuchMethodException("no matchin method ("+request.getMethodName()+") in interface "+serviceInterface.getName());
 	}
 
 	protected Object[] conform(Object[] args, Parameter[] parameters) throws JsonParseException, JsonMappingException, IOException {
