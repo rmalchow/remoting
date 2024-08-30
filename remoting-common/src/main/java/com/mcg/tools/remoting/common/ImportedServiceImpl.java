@@ -56,11 +56,13 @@ public class ImportedServiceImpl<T> implements ImportedService<T>, InvocationHan
 			timeout = method.getAnnotation(RemotingTimeout.class).value();
 		}
 
+
 		try {
 
 			byte[] req = remotingCodec.encodeRequest(method, args);
 
 			InvokeCallable ic = new InvokeCallable(req, method.getGenericReturnType());
+
 
 			FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
 

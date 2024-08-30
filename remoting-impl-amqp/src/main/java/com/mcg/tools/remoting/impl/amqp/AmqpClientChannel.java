@@ -48,14 +48,19 @@ public class AmqpClientChannel implements ClientChannel {
 
 	@Override
 	public byte[] invoke(byte[] in) throws Exception {
+
+		String correlationId = UUID.randomUUID().toString();
+		
 		try {
 			
-			String correlationId = UUID.randomUUID().toString();
 			BasicProperties props = new BasicProperties.Builder().replyTo(routingKey).correlationId(correlationId).deliveryMode(DeliveryMode.PERSISTENT.getValue()).build();
 			BlockingCell<byte[]> bc = new BlockingCell<>();
 			requestMap.put(correlationId, bc);
 			clientChannel.basicPublish(exchangeName, "request", true, props, in);
 			byte[] buff = bc.get();
+			
+			requestMap.remove(correlationId);
+			
 			return buff;
 		} catch (AlreadyClosedException ace) {
 			try {

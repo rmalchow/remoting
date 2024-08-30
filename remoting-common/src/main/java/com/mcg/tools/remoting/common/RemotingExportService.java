@@ -8,10 +8,7 @@ import javax.annotation.PostConstruct;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Scope;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
@@ -29,13 +26,6 @@ public class RemotingExportService {
 	@Autowired
 	public ApplicationContext ctx;
 	
-	@Bean
-	@Scope(scopeName = DefaultListableBeanFactory.SCOPE_PROTOTYPE)
-	public ExportedService exportService(Object service) {
-		ExportedService ex = new ExportedService(service);
-		return ex;
-	}
-
 	@PostConstruct
 	public void init() {
 		for(String s : ctx.getBeanNamesForAnnotation(RemotingEndpoint.class)) {
