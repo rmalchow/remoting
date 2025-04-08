@@ -15,18 +15,18 @@ import org.springframework.stereotype.Service;
 import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
 import com.mcg.tools.remoting.common.util.CglibHelper;
 
-@Service
-@Order()
+//@Service
+//@Order()
 public class RemotingExportService {
 
 	private static Log log = LogFactory.getLog(RemotingExportService.class);
 	
 	private List<ExportedService> exportedServices = new ArrayList<>();
 	
-	@Autowired
+	//@Autowired
 	public ApplicationContext ctx;
 	
-	@PostConstruct
+	//@PostConstruct
 	public void init() {
 		for(String s : ctx.getBeanNamesForAnnotation(RemotingEndpoint.class)) {
 			Object o = ctx.getBean(s);
