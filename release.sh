@@ -15,7 +15,7 @@ realpath() {
 
 project_dir=`realpath $0`
 
-local_maven=../maven
+local_maven=${project_dir}/../maven
 # ${HOME}/maven-rmalchow
 
 if [ ! -d ${local_maven} ]; then
