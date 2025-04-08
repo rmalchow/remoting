@@ -8,8 +8,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -20,6 +18,8 @@ import com.mcg.tools.remoting.common.interfaces.ClientChannel;
 import com.mcg.tools.remoting.common.interfaces.ClientChannelProvider;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class AmqpClientChannelProvider implements ClientChannelProvider {

@@ -1,7 +1,5 @@
 package com.mcg.tools.remoting.common;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +10,10 @@ import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
 import com.mcg.tools.remoting.api.annotations.RemotingEndpoint;
 import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.api.entities.RemotingRequest;
-import com.mcg.tools.remoting.common.codec.SimpleRemotingCodec;
 import com.mcg.tools.remoting.common.interfaces.ServerChannelProvider;
 import com.mcg.tools.remoting.common.util.CglibHelper;
+
+import jakarta.annotation.PostConstruct;
 
 public class ExportedService {
 

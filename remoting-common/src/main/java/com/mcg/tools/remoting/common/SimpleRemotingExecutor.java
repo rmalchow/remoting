@@ -4,12 +4,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.beans.factory.annotation.Value;
 
 import com.mcg.tools.remoting.api.RemotingExecutor;
 import com.mcg.tools.remoting.api.entities.RemotingResponse;
+
+import jakarta.annotation.PostConstruct;
 
 public class SimpleRemotingExecutor implements RemotingExecutor {
 
