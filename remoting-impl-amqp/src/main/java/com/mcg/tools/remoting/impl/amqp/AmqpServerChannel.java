@@ -52,7 +52,7 @@ public class AmqpServerChannel implements ServerChannel{
 			
 			this.serverChannel = connection.createChannel();
 			this.serverChannel.exchangeDeclare(exchangeName, BuiltinExchangeType.DIRECT, true, false, new HashMap<>());
-			this.serverChannel.queueDeclare(requestQueueName, false, false, true, new HashMap<>());
+			this.serverChannel.queueDeclare(requestQueueName, true, false, true, new HashMap<>());
 			this.serverChannel.queueBind(requestQueueName, exchangeName, "request");
 			this.serverChannel.basicConsume(requestQueueName, false, new DefaultConsumer(this.serverChannel) {
 				
