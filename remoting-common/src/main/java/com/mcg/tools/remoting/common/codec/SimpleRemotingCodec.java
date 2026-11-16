@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,11 +14,18 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.mcg.tools.remoting.api.RemotingCodec;
 import com.mcg.tools.remoting.api.RemotingInterceptor;
 import com.mcg.tools.remoting.api.entities.RemotingRequest;
@@ -27,8 +35,18 @@ public class SimpleRemotingCodec implements RemotingCodec {
 	
 	private static Log log = LogFactory.getLog(SimpleRemotingCodec.class);
 
-	@Autowired(required =  false)
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private static final Log payloadLog = LogFactory.getLog("com.mcg.tools.remoting.payload");
+
+	// the wire format (design D1): Spring Boot 3's auto-configured Jackson defaults, independent of the host's mapper
+	private final ObjectMapper objectMapper = JsonMapper.builder()
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+			.disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.disable(MapperFeature.DEFAULT_VIEW_INCLUSION)
+			.addModule(new Jdk8Module())
+			.addModule(new JavaTimeModule())
+			.addModule(new ParameterNamesModule(JsonCreator.Mode.DEFAULT))
+			.build();
 
 	@Autowired
 	private ApplicationContext ctx;
@@ -45,13 +63,6 @@ public class SimpleRemotingCodec implements RemotingCodec {
 		return remotingInterceptors;
 	}
 	
-	
-	private ObjectMapper getObjectMapper() {
-		if(objectMapper == null) {
-			objectMapper = new ObjectMapper();
-		}
-		return objectMapper;
-	}
 	
 	@Override
 	public Object invoke(Class<?> serviceInterface, RemotingRequest request, Object target) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
@@ -123,8 +134,7 @@ public class SimpleRemotingCodec implements RemotingCodec {
 	}
 	
 	protected Object conform(Object arg, Type type) throws JsonParseException, JsonMappingException, JsonProcessingException, IOException {
-		ObjectMapper om = getObjectMapper();
-		return om.readValue(om.writeValueAsBytes(arg), TypeFactory.defaultInstance().constructType(type));
+		return objectMapper.readValue(objectMapper.writeValueAsBytes(arg), objectMapper.getTypeFactory().constructType(type));
 	}
 
 	@Override
@@ -139,10 +149,11 @@ public class SimpleRemotingCodec implements RemotingCodec {
 				log.debug("invoking interceptor: "+ri.getClass().getName());
 				ri.beforeSend(out);
 			}
-			if(log.isDebugEnabled()) {
-				log.debug(getObjectMapper().writeValueAsString(out));
+			byte[] body = objectMapper.writeValueAsBytes(out);
+			if(payloadLog.isTraceEnabled()) {
+				payloadLog.trace("request: "+new String(body, StandardCharsets.UTF_8));
 			}
-			return getObjectMapper().writeValueAsBytes(out);
+			return body;
 		} catch (Exception e) {
 			throw new RuntimeException("unable to map request",e);
 		}
@@ -151,7 +162,10 @@ public class SimpleRemotingCodec implements RemotingCodec {
 	@Override
 	public RemotingResponse decodeResponse(byte[] response, Type returnType) {
 		try {
-			RemotingResponse out = getObjectMapper().readValue(response, RemotingResponse.class);
+			if(payloadLog.isTraceEnabled()) {
+				payloadLog.trace("response: "+new String(response, StandardCharsets.UTF_8));
+			}
+			RemotingResponse out = objectMapper.readValue(response, RemotingResponse.class);
 
 			List<RemotingInterceptor> interceptors = getInterceptors();
 			log.debug("invoking interceptors: "+interceptors.size());
@@ -171,11 +185,11 @@ public class SimpleRemotingCodec implements RemotingCodec {
 	@Override
 	public RemotingRequest decodeRequest(byte[] body) {
 		try {
-			if(log.isDebugEnabled()) {
-				log.debug(new String(body));
+			if(payloadLog.isTraceEnabled()) {
+				payloadLog.trace("request: "+new String(body, StandardCharsets.UTF_8));
 			}
 			
-			RemotingRequest rr = getObjectMapper().readValue(body, RemotingRequest.class); 
+			RemotingRequest rr = objectMapper.readValue(body, RemotingRequest.class); 
 			
 			List<RemotingInterceptor> interceptors = getInterceptors();
 			log.debug("invoking interceptors: "+interceptors.size());
@@ -202,7 +216,11 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			if(e!=null) {
 				rr.exception(e);
 			}
-			return getObjectMapper().writeValueAsBytes(rr);
+			byte[] body = objectMapper.writeValueAsBytes(rr);
+			if(payloadLog.isTraceEnabled()) {
+				payloadLog.trace("response: "+new String(body, StandardCharsets.UTF_8));
+			}
+			return body;
 		} catch (Exception ex) {
 			throw new RuntimeException("error encoding response", ex);
 		}

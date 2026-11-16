@@ -67,23 +67,23 @@ public class ExportedService {
 			}
 		}
 
-		Class<?> c = Class.forName(rec.value().getCanonicalName());
+		Class<?> c = rec.value();
 		
 		RemoteEndpoint rei = c.getAnnotation(RemoteEndpoint.class);
 		if(rei==null) throw new RemotingException("NOT_A_REMOTE_ENDPOINT: "+c.getClass()+" is missing the necessary annotation", null);			
 		
 		String appname = rei.app();
-		if(StringUtils.isEmpty(appname)) {
+		if(!StringUtils.hasLength(appname)) {
 			throw new RemotingException("EMPTY_APP_NAME", null);
 		}
 
 		String servicename = rei.name();
-		if(StringUtils.isEmpty(servicename)) {
+		if(!StringUtils.hasLength(servicename)) {
 			throw new RemotingException("EMPTY_SERVICE_NAME", null);
 		}
 
 		for(Class<?> ci : service.getClass().getInterfaces()) {
-			if(ci.getName() != c.getName()) continue;
+			if(!ci.equals(c)) continue;
 			if(!(ci.isAssignableFrom(service.getClass()))) continue;
 			this.serviceInterface = ci;
 			break;

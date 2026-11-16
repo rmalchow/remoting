@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -66,12 +67,19 @@ public class ImportedServiceImpl<T> implements ImportedService<T>, InvocationHan
 
 			FutureTask<RemotingResponse> t = new FutureTask<RemotingResponse>(ic);
 
-			log.debug("Importing Service: >>> calling " + serviceInterface.getSimpleName() + "." + method.getName() + "()");
 			executor.execute(t);
-			log.debug("Importing Service: <<< response received " + serviceInterface.getSimpleName() + "." + method.getName() + "()");
 
-			RemotingResponse response = t.get(timeout, TimeUnit.SECONDS);
-			log.debug("Importing Service: <<< response received " + serviceInterface.getSimpleName() + "." + method.getName() + "()");
+			RemotingResponse response;
+			try {
+				response = t.get(timeout, TimeUnit.SECONDS);
+			} catch (TimeoutException te) {
+				// frees the pool thread blocked in the channel
+				t.cancel(true);
+				throw te;
+			}
+			if (log.isDebugEnabled()) {
+				log.debug(serviceInterface.getSimpleName() + "." + method.getName() + " (" + (args == null ? 0 : args.length) + " args) took " + (System.currentTimeMillis() - start) + " ms");
+			}
 
 			if (!response.isSuccess()) {
 				for(String s: response.getStackTrace()) {
@@ -83,7 +91,7 @@ public class ImportedServiceImpl<T> implements ImportedService<T>, InvocationHan
 			return response.getReturnValue();
 
 		} catch (Throwable t) {
-			log.warn("RPC failed (" + t.getClass() + ") (timeout: " + timeout + ", elapsed: " + (System.currentTimeMillis() - start) + ")");
+			log.warn("RPC " + serviceInterface.getSimpleName() + "." + method.getName() + " failed (" + t.getClass() + ")" + (t instanceof TimeoutException ? ", cancelled" : "") + " (timeout: " + timeout + ", elapsed: " + (System.currentTimeMillis() - start) + ")");
 			throw t;
 		}
 	}

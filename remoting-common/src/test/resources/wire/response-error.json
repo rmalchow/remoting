@@ -1,0 +1,1 @@
+{"headers":{},"success":false,"returnValue":null,"stackTrace":["caused by --- class java.lang.IllegalStateException: boom","error: \t com.example.Remote.call (Remote.java 42) "]}

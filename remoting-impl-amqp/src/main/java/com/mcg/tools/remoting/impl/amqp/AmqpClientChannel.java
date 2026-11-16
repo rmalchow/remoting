@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.boot.autoconfigure.jms.JmsProperties.DeliveryMode;
 
 import com.mcg.tools.remoting.api.annotations.RemotingException;
 import com.mcg.tools.remoting.common.interfaces.ClientChannel;
@@ -25,7 +24,9 @@ import com.rabbitmq.utility.BlockingCell;
 
 public class AmqpClientChannel implements ClientChannel {
 
-	private static Log log = LogFactory.getLog(AmqpServerChannel.class);
+	private static Log log = LogFactory.getLog(AmqpClientChannel.class);
+
+	private static final int PERSISTENT_DELIVERY_MODE = 2;
 	
 	private Connection connection;
 	
@@ -53,24 +54,25 @@ public class AmqpClientChannel implements ClientChannel {
 		
 		try {
 			
-			BasicProperties props = new BasicProperties.Builder().replyTo(routingKey).correlationId(correlationId).deliveryMode(DeliveryMode.PERSISTENT.getValue()).build();
+			BasicProperties props = new BasicProperties.Builder().replyTo(routingKey).correlationId(correlationId).deliveryMode(PERSISTENT_DELIVERY_MODE).build();
 			BlockingCell<byte[]> bc = new BlockingCell<>();
 			requestMap.put(correlationId, bc);
 			clientChannel.basicPublish(exchangeName, "request", true, props, in);
-			byte[] buff = bc.get();
-			
-			requestMap.remove(correlationId);
-			
-			return buff;
+			return bc.get();
 		} catch (AlreadyClosedException ace) {
 			try {
 				connection.close();
 			} catch (Exception e) {
 			}
 			throw ace;
+		} catch (InterruptedException ie) {
+			// the caller timed out and cancelled this call
+			throw ie;
 		} catch (Exception e) {
 			log.error("error in client");
 			throw e;
+		} finally {
+			requestMap.remove(correlationId);
 		}
 	}
 	
