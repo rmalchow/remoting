@@ -8,13 +8,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -30,10 +33,17 @@ import com.mcg.tools.remoting.api.entities.RemotingResponse;
 import com.mcg.tools.remoting.common.channel.util.TestInterceptorA;
 import com.mcg.tools.remoting.common.codec.SimpleRemotingCodecConfig;
 import com.mcg.tools.remoting.common.wire.WireFixtures.Color;
+import com.mcg.tools.remoting.common.wire.WireFixtures.Level;
+import com.mcg.tools.remoting.common.wire.WireFixtures.More;
+import com.mcg.tools.remoting.common.wire.WireFixtures.Point;
 import com.mcg.tools.remoting.common.wire.WireFixtures.Sample;
 import com.mcg.tools.remoting.common.wire.WireFixtures.WireService;
 
-/** The 0.3.0 codec against the JSON recorded from 0.2.2 (design D2 "The permanent test"). */
+/**
+ * The codec against the recorded JSON: files from 0.2.2 (design D2 of platform-jdk25-boot4) and the *-more files
+ * recorded with the 0.3.x Jackson 2 codec (change remoting-jackson3). Encoding must reproduce the files byte for byte;
+ * decoding must give the same values as {@link Jackson2RemotingCodec}, the old peer.
+ */
 class WireFormatTest {
 
 	private static final ObjectMapper TREE = new ObjectMapper();
@@ -71,6 +81,12 @@ class WireFormatTest {
 		public void fire(String text, Integer number) {
 			args = new Object[] { text, number };
 		}
+
+		@Override
+		public More more(More more, BigDecimal amount, long big, Optional<String> optional, Level level, Point point, Map<Date, String> byDate) {
+			args = new Object[] { more, amount, big, optional, level, point, byDate };
+			return null;
+		}
 	}
 
 	private static byte[] golden(String name) throws IOException {
@@ -81,6 +97,14 @@ class WireFormatTest {
 
 	private static void assertSameJson(String file, byte[] actual) throws IOException {
 		assertEquals(TREE.readTree(golden(file)), TREE.readTree(actual), file);
+		assertEquals(new String(golden(file), StandardCharsets.UTF_8), new String(actual, StandardCharsets.UTF_8), "byte-identical: " + file);
+	}
+
+	private static RemotingCodec jackson2() {
+		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+		ctx.registerBean(Jackson2RemotingCodec.class);
+		ctx.refresh();
+		return ctx.getBean(RemotingCodec.class);
 	}
 
 	private static RemotingCodec codec(Class<?>... extra) {
@@ -188,5 +212,39 @@ class WireFormatTest {
 		((ObjectNode) tree.get("returnValue")).put("unexpected", 1);
 		RemotingResponse response = codec().decodeResponse(TREE.writeValueAsBytes(tree), ALL.getGenericReturnType());
 		assertEquals(WireFixtures.SAMPLE, response.getReturnValue());
+	}
+
+	// --- types added in 0.4.0 (Jackson 3 port)
+
+	@Test
+	void encodesMoreGoldenFiles() throws IOException {
+		RemotingCodec codec = codec();
+		assertSameJson("request-more.json", codec.encodeRequest(WireGoldenRecorder.MORE, WireFixtures.moreArgs()));
+		assertSameJson("response-more.json", codec.createResponse(WireFixtures.MORE, true, null));
+	}
+
+	@Test
+	void decodesRequestMoreLikeJackson2() throws Exception {
+		RemotingCodec codec = codec();
+		RemotingCodec old = jackson2();
+		Object[] args = invoke(codec, codec.decodeRequest(golden("request-more.json")));
+		Object[] expected = invoke(old, old.decodeRequest(golden("request-more.json")));
+		assertArrayEquals(expected, args);
+		// known since 0.2.x: arguments are first read untyped, so a BigDecimal passes through a double
+		assertEquals(new BigDecimal("1234.5"), args[1], "BigDecimal loses trailing zeros (as in 0.3.x)");
+		assertEquals(new BigDecimal("1234.5"), ((More) args[0]).getAmount(), "also inside a DTO argument");
+		assertEquals(WireFixtures.BIG, args[2], "long beyond 2^53 survives");
+	}
+
+	@Test
+	void decodesResponseMoreLikeJackson2() throws IOException {
+		Type type = WireGoldenRecorder.MORE.getGenericReturnType();
+		More actual = (More) codec().decodeResponse(golden("response-more.json"), type).getReturnValue();
+		More expected = (More) jackson2().decodeResponse(golden("response-more.json"), type).getReturnValue();
+		assertEquals(expected, actual);
+		assertEquals(expected.getProps(), actual.getProps());
+		for (String k : expected.getProps().keySet()) {
+			assertEquals(expected.getProps().get(k).getClass(), actual.getProps().get(k).getClass(), "untyped value class: " + k);
+		}
 	}
 }

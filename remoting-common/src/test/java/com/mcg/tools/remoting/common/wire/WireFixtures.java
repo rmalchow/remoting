@@ -1,12 +1,19 @@
 package com.mcg.tools.remoting.common.wire;
 
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
 
@@ -21,6 +28,83 @@ public final class WireFixtures {
 		Sample all(Date date, Instant instant, Locale locale, byte[] bytes, Color color, Sample sample, Map<String, Object> map);
 
 		void fire(String text, Integer number);
+
+		/** Types added for the Jackson 3 port (0.4.0); recorded with the 0.3.x Jackson 2 codec. */
+		More more(More more, BigDecimal amount, long big, Optional<String> optional, Level level, Point point, Map<Date, String> byDate);
+	}
+
+	/** An enum whose toString() differs from its name. */
+	public enum Level {
+		LOW, HIGH;
+
+		@Override
+		public String toString() {
+			return name().toLowerCase(Locale.ROOT);
+		}
+	}
+
+	public record Point(int x, String label) {
+	}
+
+	/** Like dbutils' BaseEntityV2: the id comes from a generic superclass. */
+	public static class Entity<T> {
+		private T id;
+
+		public T getId() { return id; }
+		public void setId(T id) { this.id = id; }
+	}
+
+	public static class More extends Entity<String> {
+		private BigDecimal amount;
+		private long big;
+		private Long boxed;
+		private LocalDate day;
+		private LocalDateTime local;
+		private OffsetDateTime offset;
+		private Duration duration;
+		private Level level;
+		private Point point;
+		private Map<Long, String> byId;
+		private Map<String, Object> props;
+
+		public More() {
+		}
+
+		public BigDecimal getAmount() { return amount; }
+		public void setAmount(BigDecimal amount) { this.amount = amount; }
+		public long getBig() { return big; }
+		public void setBig(long big) { this.big = big; }
+		public Long getBoxed() { return boxed; }
+		public void setBoxed(Long boxed) { this.boxed = boxed; }
+		public LocalDate getDay() { return day; }
+		public void setDay(LocalDate day) { this.day = day; }
+		public LocalDateTime getLocal() { return local; }
+		public void setLocal(LocalDateTime local) { this.local = local; }
+		public OffsetDateTime getOffset() { return offset; }
+		public void setOffset(OffsetDateTime offset) { this.offset = offset; }
+		public Duration getDuration() { return duration; }
+		public void setDuration(Duration duration) { this.duration = duration; }
+		public Level getLevel() { return level; }
+		public void setLevel(Level level) { this.level = level; }
+		public Point getPoint() { return point; }
+		public void setPoint(Point point) { this.point = point; }
+		public Map<Long, String> getById() { return byId; }
+		public void setById(Map<Long, String> byId) { this.byId = byId; }
+		public Map<String, Object> getProps() { return props; }
+		public void setProps(Map<String, Object> props) { this.props = props; }
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof More m && Objects.equals(getId(), m.getId()) && Objects.equals(amount, m.amount) && big == m.big
+					&& Objects.equals(boxed, m.boxed) && Objects.equals(day, m.day) && Objects.equals(local, m.local)
+					&& Objects.equals(offset, m.offset) && Objects.equals(duration, m.duration) && level == m.level
+					&& Objects.equals(point, m.point) && Objects.equals(byId, m.byId) && Objects.equals(props, m.props);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(getId(), amount, big, boxed, day, local, offset, duration, level, point, byId, props);
+		}
 	}
 
 	public enum Color {
@@ -72,6 +156,42 @@ public final class WireFixtures {
 	public static final Color COLOR = Color.GREEN;
 	public static final Sample SAMPLE = sample("parent", List.of(sample("child", null)));
 	public static final Map<String, Object> MAP = map();
+
+	/** 2^53 + 1: not representable as a double */
+	public static final long BIG = 9007199254740993L;
+	public static final BigDecimal AMOUNT = new BigDecimal("1234.50");
+	public static final More MORE = more();
+
+	/** Arguments for {@link WireService#more}, in parameter order. */
+	public static Object[] moreArgs() {
+		Map<Date, String> byDate = new LinkedHashMap<>();
+		byDate.put(DATE, "d");
+		return new Object[] { MORE, AMOUNT, BIG, Optional.of("present"), Level.HIGH, new Point(3, "p"), byDate };
+	}
+
+	private static More more() {
+		More m = new More();
+		m.setId("guid-1");
+		m.setAmount(AMOUNT);
+		m.setBig(BIG);
+		m.setBoxed(null);
+		m.setDay(LocalDate.of(2026, 11, 16));
+		m.setLocal(LocalDateTime.of(2026, 11, 16, 12, 0, 1, 500_000_000));
+		m.setOffset(OffsetDateTime.of(2026, 11, 16, 14, 0, 0, 0, ZoneOffset.ofHours(2)));
+		m.setDuration(Duration.ofMinutes(90));
+		m.setLevel(Level.LOW);
+		m.setPoint(new Point(1, "one"));
+		Map<Long, String> byId = new LinkedHashMap<>();
+		byId.put(BIG, "big");
+		m.setById(byId);
+		Map<String, Object> props = new LinkedHashMap<>();
+		props.put("date", DATE);
+		props.put("big", BIG);
+		props.put("amount", AMOUNT);
+		props.put("locale", LOCALE);
+		m.setProps(props);
+		return m;
+	}
 
 	/** Arguments for {@link WireService#all}, in parameter order. */
 	public static Object[] allArgs() {
