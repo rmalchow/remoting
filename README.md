@@ -154,6 +154,13 @@ mvn verify                              # Spring Boot 3.5 (default)
 mvn -Dspringboot.version=4.0.9 verify   # Spring Boot 4
 ```
 
+### Changes in 0.4.1
+
+- Client channels heal themselves. Before, if setting up a client channel failed once (at its lazy creation on the first call, or after the broker closed it), it was never retried while the connection stayed open, and every call failed immediately with "error in client" until the process was restarted. Now a call that finds its channel not ready (never started, closed, reply consumer cancelled, connection closed) repairs it inline (two attempts, 250 ms apart) and only then fails with `IllegalStateException: CLIENT_CHANNEL_NOT_READY`; the 10 s connection check also restarts every channel that is not ready. A request whose publish hit a closed channel is sent again on the new one (nothing was sent the first time).
+- Races removed: concurrent first calls of an interface create one channel, not several; channel start, the 10 s check and lazy creation no longer interfere.
+- Every failure in the client lifecycle is logged with its exception and step, e.g. `error creating consumer (authn:publicKeyProvider) at step [exchangeDeclare authn:publicKeyProvider]` or `error in client (...) at step [publish]`.
+- No wire-format, topology or API change.
+
 ### Migrating from 0.3.x
 
 - `remoting-common` depends on `tools.jackson.core:jackson-databind` (Jackson 3) instead of Jackson 2's `jackson-databind`, `jackson-datatype-jdk8`, `jackson-datatype-jsr310` and `jackson-module-parameter-names`. If your application used any of these only because remoting brought them in, declare them yourself.

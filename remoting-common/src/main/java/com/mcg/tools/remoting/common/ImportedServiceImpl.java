@@ -32,7 +32,7 @@ public class ImportedServiceImpl<T> implements ImportedService<T>, InvocationHan
 
 	@Autowired
 	private ClientChannelProvider clientChannelProvider;
-	private ClientChannel clientChannel;
+	private volatile ClientChannel clientChannel;
 
 	@Autowired
 	private RemotingCodec remotingCodec;
@@ -111,7 +111,8 @@ public class ImportedServiceImpl<T> implements ImportedService<T>, InvocationHan
 		}
 	}
 
-	public ClientChannel getClientChannel() {
+	/** synchronized: concurrent first calls must not create two channels (and two reply queues) for one interface */
+	public synchronized ClientChannel getClientChannel() {
 		if (clientChannel == null) {
 			RemoteEndpoint re = (RemoteEndpoint) serviceInterface.getAnnotation(RemoteEndpoint.class);
 			if (re == null) {

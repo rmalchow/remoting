@@ -43,6 +43,7 @@ public class AmqpServerChannel implements ServerChannel{
 	/** @return true when the channel is consuming */
 	private boolean listen(Connection connection) {
 		
+		String step = "check names";
 		try {
 
 			if(StringUtils.isEmpty(app)) throw new RemotingException("EMPTY_APP_NAME", null);
@@ -52,10 +53,15 @@ public class AmqpServerChannel implements ServerChannel{
 			this.requestQueueName = app+":"+service+":request";
 			
 			closeChannel();
+			step = "createChannel";
 			this.serverChannel = connection.createChannel();
+			step = "exchangeDeclare";
 			this.serverChannel.exchangeDeclare(exchangeName, BuiltinExchangeType.DIRECT, true, false, new HashMap<>());
+			step = "queueDeclare";
 			this.serverChannel.queueDeclare(requestQueueName, true, false, true, new HashMap<>());
+			step = "queueBind";
 			this.serverChannel.queueBind(requestQueueName, exchangeName, "request");
+			step = "basicConsume";
 			this.serverChannel.basicConsume(requestQueueName, false, new DefaultConsumer(this.serverChannel) {
 				
 				@Override
@@ -79,7 +85,7 @@ public class AmqpServerChannel implements ServerChannel{
 			return true;
 			
 		} catch (Exception e) {
-			log.warn("error creating consumer ("+app+":"+service+"), retrying with the next connection check: ",e);
+			log.warn("error creating consumer ("+app+":"+service+") at step ["+step+"], retrying with the next connection check: ",e);
 			closeChannel();
 			return false;
 		}
