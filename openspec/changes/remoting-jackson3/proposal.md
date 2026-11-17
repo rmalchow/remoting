@@ -39,7 +39,9 @@ services on the new release can keep talking to each other during a rolling upda
 - New golden files (recorded JSON documents the codec must reproduce, see design D2) cover the types
   the platform's DTOs actually use, plus the `java.time` types and other cases where Jackson 3's
   defaults differ.
-- Version 0.4.0. No API, annotation, configuration, RabbitMQ topology or wire-format change.
+- **`BigDecimal` goes on the wire as a JSON string** (`"1234.50"` instead of `1234.50`), so that it
+  arrives exactly. This is the one deliberate wire-format change; see "BigDecimal" below.
+- Version 0.4.0. No API, annotation, configuration or RabbitMQ topology change.
 
 ## What does not change
 
@@ -48,13 +50,32 @@ services on the new release can keep talking to each other during a rolling upda
 - DTO annotations from `com.fasterxml.jackson.annotation` (`@JsonIgnore`, `@JsonProperty`,
   `@JsonFormat`, ...). Jackson 3 deliberately kept that package and reads the same annotations.
 - Known quirks of 0.2.x/0.3.x stay as they are (see design D5): `Optional.empty()` arrives as `null`,
-  a `BigDecimal` loses trailing zeros, overloads with the same parameter count are ambiguous.
+  overloads with the same parameter count are ambiguous.
+
+## BigDecimal
+
+Found while recording the golden files: a `BigDecimal` sent through remoting does not arrive as sent.
+`BillingEvent.price = 1234.50` arrives as `1234.5`, and a value with more than about 15 significant
+digits arrives rounded. The cause is how the receiving codec reads a message: it first reads every
+argument *without* knowing its declared type (a JSON number becomes a `Double`), and only then converts
+that to the declared `BigDecimal`. The double in between loses the scale and the precision.
+
+The owner decided: "a bigdecimal should _probably_ be strings and then coerced on receipt." So 0.4.0
+writes `"1234.50"`. A string passes the untyped step unchanged and is converted exactly into the
+declared type, by 0.4.0 receivers and — checked with the 0.3.x codec — by 0.3.x receivers too. A JSON
+number from a 0.3.x sender is still accepted, with the old precision. The full table of who gets what
+is in design D7.
+
+Consequence beyond typed targets: a `BigDecimal` put into an untyped `Object` or `Map<String,Object>`
+(e.g. `MailSpec.params`) now arrives as the `String` `"1234.50"` instead of the `Double` `1234.5`. A grep
+of the platform found no such use today.
 
 ## Impact
 
 - **Services:** bump `remoting.version` to 0.4.0. A service that used Jackson 2 classes *only because
   remoting brought them in* has to declare them itself. Nothing else.
-- **Mixed deploys:** a 0.3.x and a 0.4.0 service exchange identical bytes, in both directions.
+- **Mixed deploys:** a 0.3.x and a 0.4.0 service exchange identical bytes, in both directions, except
+  for `BigDecimal` values, which both sides read correctly (design D7).
 - **Memory:** remoting stops pulling Jackson 2 into a service. Whether Jackson 2 actually leaves a
   service depends on its other users (dbutils' schema check moves in the same step; the platform's
   own session/JWT JSON is the platform's work).
@@ -72,5 +93,10 @@ services on the new release can keep talking to each other during a rolling upda
   time; during the rollout a 0.3.x caller would receive dates and locales it may fail to read
   (`"de-DE"` is not what Jackson 2 writes for a `Locale`). Keeping the bytes identical removes the
   question entirely.
+- **Fix `BigDecimal` on the receiving side only** (read JSON numbers untyped as `BigDecimal`, Jackson's
+  `USE_BIG_DECIMAL_FOR_FLOATS`). It would fix messages from old senders too, but every floating-point
+  number in an untyped `Map<String,Object>` would then change from `Double` to `BigDecimal`, also for
+  values that were `double`s at the sender — a wider change than the string form, which affects only
+  values that were `BigDecimal`s.
 - **Bundle this with the 0.3.1 startup fix.** Kept apart on purpose, so a problem seen in the dev
   stack can be pinned on one change.

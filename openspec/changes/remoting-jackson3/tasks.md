@@ -16,7 +16,13 @@
 - [x] 3.1 README: Compatibility, Codec, "Migrating from 0.3.x"
 - [x] 3.2 dbutils 0.4.0: `SchemaCheckService` on Jackson 3, sorting off, golden `schema.json` (design D6)
 
+## 3a. BigDecimal as string (owner decision, design D7)
+- [x] 3a.1 Serializer writing `BigDecimal.toPlainString()` as a JSON string
+- [x] 3a.2 Record `*-more-040.json` with the current codec; test that they differ from the 0.3.x files only in `BigDecimal` values
+- [x] 3a.3 Tests for 0.4.0 → 0.4.0, 0.4.0 → 0.3.x (typed and untyped), 0.3.x → 0.4.0, large values, plain notation
+- [x] 3a.4 README and spec
+
 ## 4. Verification in the platform's dev stack (platform session)
 - [ ] 4.1 Services on 0.4.0-SNAPSHOT start and serve calls
-- [ ] 4.2 Mixed deploy 0.3.x ↔ 0.4.0, both directions, including `ContextService.setPicture(byte[])` and Billing (BigDecimal, Date)
+- [ ] 4.2 Mixed deploy 0.3.x ↔ 0.4.0, both directions, including `ContextService.setPicture(byte[])` and Billing (BigDecimal with scale, e.g. price `1234.50`, and Date)
 - [ ] 4.3 Release 0.4.0 (owner)

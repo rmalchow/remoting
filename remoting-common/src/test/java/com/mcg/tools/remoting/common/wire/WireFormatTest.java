@@ -219,9 +219,70 @@ class WireFormatTest {
 	@Test
 	void encodesMoreGoldenFiles() throws IOException {
 		RemotingCodec codec = codec();
-		assertSameJson("request-more.json", codec.encodeRequest(WireGoldenRecorder.MORE, WireFixtures.moreArgs()));
-		assertSameJson("response-more.json", codec.createResponse(WireFixtures.MORE, true, null));
+		assertSameJson("request-more-040.json", codec.encodeRequest(WireGoldenRecorder.MORE, WireFixtures.moreArgs()));
+		assertSameJson("response-more-040.json", codec.createResponse(WireFixtures.MORE, true, null));
 	}
+
+	/** The only declared format change of 0.4.0: BigDecimal is written as a string instead of a number. */
+	@Test
+	void bigDecimalAsStringIsTheOnlyChangeFrom03x() throws IOException {
+		for (String f : List.of("request-more", "response-more")) {
+			String current = new String(golden(f + "-040.json"), StandardCharsets.UTF_8);
+			String old = new String(golden(f + ".json"), StandardCharsets.UTF_8);
+			assertTrue(current.contains("\"1234.50\""), f);
+			assertEquals(old, current.replace("\"1234.50\"", "1234.50"), f);
+		}
+	}
+
+	// --- 0.4.0 sender, BigDecimal as string
+
+	private static Object[] moreArgsDecodedBy(RemotingCodec receiver, byte[] request) throws Exception {
+		return invoke(receiver, receiver.decodeRequest(request));
+	}
+
+	@Test
+	void newReceiverGetsExactBigDecimal() throws Exception {
+		Object[] args = moreArgsDecodedBy(codec(), golden("request-more-040.json"));
+		assertEquals(new BigDecimal("1234.50"), args[1], "typed argument, scale kept");
+		assertEquals(new BigDecimal("1234.50"), ((More) args[0]).getAmount(), "typed DTO field, scale kept");
+		assertEquals("1234.50", ((More) args[0]).getProps().get("amount"), "untyped (Map<String,Object>): a String");
+
+		More returned = (More) codec().decodeResponse(golden("response-more-040.json"), WireGoldenRecorder.MORE.getGenericReturnType()).getReturnValue();
+		assertEquals(new BigDecimal("1234.50"), returned.getAmount(), "typed return value field, scale kept");
+	}
+
+	/** A 0.3.x receiver (Jackson 2) coerces the string into typed BigDecimal targets exactly; untyped targets get the String. */
+	@Test
+	void oldReceiverCoercesBigDecimalString() throws Exception {
+		Object[] args = moreArgsDecodedBy(jackson2(), golden("request-more-040.json"));
+		assertEquals(new BigDecimal("1234.50"), args[1], "typed argument");
+		assertEquals(new BigDecimal("1234.50"), ((More) args[0]).getAmount(), "typed DTO field");
+		assertEquals("1234.50", ((More) args[0]).getProps().get("amount"), "untyped: String (a 0.3.x sender gave Double 1234.5)");
+
+		More returned = (More) jackson2().decodeResponse(golden("response-more-040.json"), WireGoldenRecorder.MORE.getGenericReturnType()).getReturnValue();
+		assertEquals(new BigDecimal("1234.50"), returned.getAmount(), "typed return value field");
+	}
+
+	@Test
+	void largeBigDecimalSurvivesToNewAndOldReceivers() throws Exception {
+		BigDecimal huge = new BigDecimal("12345678901234567890.123456789");
+		BigDecimal small = new BigDecimal("0.10");
+		BigDecimal exp = new BigDecimal("1E+3");
+		Object[] in = WireFixtures.moreArgs();
+		in[1] = huge;
+		byte[] request = codec().encodeRequest(WireGoldenRecorder.MORE, in);
+		for (RemotingCodec receiver : List.of(codec(), jackson2())) {
+			assertEquals(huge, moreArgsDecodedBy(receiver, request)[1]);
+		}
+		for (BigDecimal v : List.of(small, exp)) {
+			in[1] = v;
+			request = codec().encodeRequest(WireGoldenRecorder.MORE, in);
+			assertTrue(new String(request, StandardCharsets.UTF_8).contains("\"" + v.toPlainString() + "\""), "plain notation: " + v);
+			assertEquals(0, v.compareTo((BigDecimal) moreArgsDecodedBy(codec(), request)[1]));
+		}
+	}
+
+	// --- 0.3.x sender, BigDecimal as number: still accepted, with the old precision
 
 	@Test
 	void decodesRequestMoreLikeJackson2() throws Exception {
@@ -230,8 +291,8 @@ class WireFormatTest {
 		Object[] args = invoke(codec, codec.decodeRequest(golden("request-more.json")));
 		Object[] expected = invoke(old, old.decodeRequest(golden("request-more.json")));
 		assertArrayEquals(expected, args);
-		// known since 0.2.x: arguments are first read untyped, so a BigDecimal passes through a double
-		assertEquals(new BigDecimal("1234.5"), args[1], "BigDecimal loses trailing zeros (as in 0.3.x)");
+		// a 0.3.x sender writes a JSON number; it is read untyped first and passes through a double, as in 0.3.x
+		assertEquals(new BigDecimal("1234.5"), args[1], "number from a 0.3.x sender: trailing zeros lost, as before");
 		assertEquals(new BigDecimal("1234.5"), ((More) args[0]).getAmount(), "also inside a DTO argument");
 		assertEquals(WireFixtures.BIG, args[2], "long beyond 2^53 survives");
 	}

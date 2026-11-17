@@ -79,7 +79,8 @@ the code they test. The recorder (`WireGoldenRecorder`) only runs with `-Dwire.r
 
 ## D3. What the permanent test checks
 
-`WireFormatTest`, for every golden file:
+`WireFormatTest`, for every golden file of the current version (the 0.2.2 files and the
+`*-more-040` files of D7; the 0.3.x `*-more` files are decode-only since D7):
 
 - **encode** — the codec's output equals the file as a JSON tree *and* byte for byte (the byte check
   is new in 0.4.0; the tree check alone would not catch property order).
@@ -111,12 +112,54 @@ The codec first reads arguments and return values *untyped* (into `Map`/`List`/`
 converts them to the declared parameter type. Consequences, identical in 0.2.2, 0.3.x and 0.4.0 and
 pinned by the tests so a change would be noticed:
 
-- `BigDecimal` goes through a `double`: `1234.50` arrives as `1234.5`; values beyond ~15 significant
-  digits lose precision. Relevant for `BillingEvent` amounts, where two decimals fit easily.
 - `Optional.empty()` arrives as `null`.
 - Same-arity overloads are dispatched to the first method whose parameters the values convert to.
 
 Fixing these changes what a service receives, so it belongs in its own change.
+
+## D7. BigDecimal as a JSON string
+
+The untyped first step of D5 also hit `BigDecimal`: a JSON number `1234.50` becomes the `Double`
+`1234.5`, and the conversion to the declared `BigDecimal` afterwards cannot bring back the lost zero
+(or lost digits, beyond ~15 significant ones). The owner chose to send it as a string.
+
+- **Encoding:** a serializer registered for `BigDecimal` writes `value.toPlainString()` as a JSON string:
+  `1234.50` → `"1234.50"`, `0.10` → `"0.10"`, `1E+3` → `"1000"` (plain, so no receiver has to parse an
+  exponent). Scale is preserved because `toPlainString` keeps trailing zeros.
+- **Decoding:** nothing new. A JSON string read untyped stays a `String`; converting a `String` to a
+  declared `BigDecimal` is Jackson's standard scalar coercion, on by default in Jackson 2 and 3. A JSON
+  number is still read as before.
+
+What a receiver gets, each row pinned by a test in `WireFormatTest`:
+
+| Sender | Receiver | typed `BigDecimal` (parameter, return value, DTO field) | untyped (`Object`, `Map<String,Object>`) | test |
+|---|---|---|---|---|
+| 0.4.0 | 0.4.0 | `1234.50`, exact | `String` `"1234.50"` | `newReceiverGetsExactBigDecimal` |
+| 0.4.0 | 0.3.x | `1234.50`, exact | `String` `"1234.50"` | `oldReceiverCoercesBigDecimalString` (uses `Jackson2RemotingCodec`) |
+| 0.3.x | 0.4.0 | `1234.5` (through a double, as before) | `Double` `1234.5` (as before) | `decodesRequestMoreLikeJackson2` |
+
+`largeBigDecimalSurvivesToNewAndOldReceivers` sends `12345678901234567890.123456789` and checks that
+both receivers get it exactly, and that `0.10` and `1E+3` are written in plain notation.
+
+Golden files: `request-more.json`/`response-more.json` stay as recorded by the 0.3.x codec — they are
+now "what an old sender sends" and pin the lenient decoding. `request-more-040.json`/`response-more-040.json`
+are recorded by the 0.4.0 codec (`-Dwire.record=current`) and pin its encoding byte for byte.
+`bigDecimalAsStringIsTheOnlyChangeFrom03x` checks that replacing `"1234.50"` by `1234.50` in the 0.4.0
+files gives exactly the 0.3.x files, so no other difference can slip in through the re-recording.
+
+The untyped column is a behaviour change: a `BigDecimal` placed in a `Map<String,Object>` used to arrive
+as a `Double`, now as a `String`. The platform's only remoted `Map<String,Object>` is `MailSpec.params`;
+a grep found no `BigDecimal` put into it.
+
+Rejected:
+
+- **`USE_BIG_DECIMAL_FOR_FLOATS` on the receiver** (read every untyped JSON decimal as `BigDecimal`).
+  Fixes old senders too, but changes the class of *every* decimal in untyped maps from `Double` to
+  `BigDecimal`, including values that were `double`s at the sender.
+- **Reading arguments as a JSON tree and converting the tree to the declared type**, which removes the
+  lossy untyped step for everything. Interceptors see `RemotingRequest.getParams()` after decoding; they
+  would get tree nodes instead of `Map`/`List`. Too wide for this change.
+- **`ToStringSerializer`** for `BigDecimal`: `toString()` can produce exponent notation (`1E+3`).
 
 ## D6. dbutils
 

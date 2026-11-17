@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,13 +16,16 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.cfg.DateTimeFeature;
 import tools.jackson.databind.cfg.EnumFeature;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 import tools.jackson.databind.ser.std.ToStringSerializer;
 import tools.jackson.databind.util.StdDateFormat;
 
@@ -53,7 +57,12 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			// java.util.Date as "2026-11-16T12:00:00.000+00:00" (Jackson 3 would write "...000Z")
 			.defaultDateFormat(new StdDateFormat().withColonInTimeZone(true).withZeroOffsetAsZ(false))
 			// Locale as "de_DE" (Jackson 3 would write the language tag "de-DE")
-			.addModule(new SimpleModule("remoting-wire-format").addSerializer(Locale.class, ToStringSerializer.instance))
+			.addModule(new SimpleModule("remoting-wire-format")
+					.addSerializer(Locale.class, ToStringSerializer.instance)
+					// BigDecimal as a string ("1234.50"): arguments and return values are first read untyped, and a JSON
+					// number would pass through a double there, losing scale and precision. A string survives that step
+					// and is coerced into the declared BigDecimal. JSON numbers (0.3.x senders) are still accepted.
+					.addSerializer(BigDecimal.class, BigDecimalAsPlainString.INSTANCE))
 			.build();
 
 	@Autowired
@@ -233,9 +242,19 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			throw new RuntimeException("error encoding response", ex);
 		}
 	}
-	
-	
-	
-	
+
+	/** Writes the exact value with its scale and without exponent, e.g. "1234.50" or "1000" (not "1E+3"). */
+	static final class BigDecimalAsPlainString extends StdSerializer<BigDecimal> {
+		static final BigDecimalAsPlainString INSTANCE = new BigDecimalAsPlainString();
+
+		private BigDecimalAsPlainString() {
+			super(BigDecimal.class);
+		}
+
+		@Override
+		public void serialize(BigDecimal value, JsonGenerator gen, SerializationContext ctx) {
+			gen.writeString(value.toPlainString());
+		}
+	}
 
 }
