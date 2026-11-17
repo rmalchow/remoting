@@ -46,6 +46,34 @@ default differs from Jackson 2 and a future fixture could hit them:
 - `DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES` off. On in Jackson 3: a JSON `null` for an
   `int` field would throw instead of becoming `0` as in Jackson 2.
 
+- **Which constructors are creators** (found after the first snapshot, by the platform's
+  `WireCompatTest`). A *creator* is the constructor Jackson deserializes through, and Jackson writes a
+  creator's properties *first*. The platform's `AuthIdentity` has a no-arg constructor and
+  `AuthIdentity(String agent)`; its fields are declared `key, agent, started, users` and it inherits
+  `id`. Jackson 2 wrote `{"id","key","agent","started","users"}`; Jackson 3 wrote
+  `{"agent","id","key","started","users"}` — not alphabetical, as it first looked, but `agent` moved to
+  the front because Jackson 3 took the one-argument constructor as a creator.
+  A test of seven constructor shapes against both versions showed the Jackson 2 rule: an
+  *unannotated* constructor is a creator only when the class has **no** no-arg constructor; an explicit
+  `@JsonCreator` and a record's canonical constructor count in both.
+
+  | shape | Jackson 2 | untuned Jackson 3 |
+  |---|---|---|
+  | no-arg + `(String agent)` (AuthIdentity) | `key, agent` | `agent, key` |
+  | no-arg + `(String b, String a)` | `a, b` | `b, a` |
+  | only `(String b, String a)` | `b, a` | `b, a` |
+  | no-arg + `@JsonCreator (b, a)` | `b, a` | `b, a` |
+  | record `(b, a)` | `b, a` | `b, a` |
+
+  No built-in Jackson 3 switch reproduces this: `ConstructorDetector` options change the other rows,
+  and turning off `SORT_CREATOR_PROPERTIES_FIRST` breaks the last three. So the codec installs
+  `Jackson2CreatorRule`, a `JacksonAnnotationIntrospector` that answers "disabled" for unannotated
+  constructors (not of records) of classes that declare a no-arg constructor. Deserialization then
+  goes through the no-arg constructor and setters, as it did in Jackson 2. The shapes are pinned by
+  `request-shapes.json` / `response-shapes.json`, recorded with the 0.3.x codec.
+  The remoting build now compiles with `-parameters` (as services built with Boot's parent do), so the
+  fixtures' constructor parameter names are visible as in production.
+
 The `Jdk8Module`, `JavaTimeModule` and `ParameterNamesModule` that 0.3.x registered are part of
 Jackson 3's core and need no registration.
 

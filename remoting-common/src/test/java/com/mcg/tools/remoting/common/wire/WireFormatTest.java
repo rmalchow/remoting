@@ -83,6 +83,12 @@ class WireFormatTest {
 		}
 
 		@Override
+		public WireFixtures.Ident shapes(WireFixtures.Ident ident, WireFixtures.Pair pair, WireFixtures.Fixed fixed, WireFixtures.Annotated annotated) {
+			args = new Object[] { ident, pair, fixed, annotated };
+			return null;
+		}
+
+		@Override
 		public More more(More more, BigDecimal amount, long big, Optional<String> optional, Level level, Point point, Map<Date, String> byDate) {
 			args = new Object[] { more, amount, big, optional, level, point, byDate };
 			return null;
@@ -306,6 +312,24 @@ class WireFormatTest {
 		assertEquals(expected.getProps(), actual.getProps());
 		for (String k : expected.getProps().keySet()) {
 			assertEquals(expected.getProps().get(k).getClass(), actual.getProps().get(k).getClass(), "untyped value class: " + k);
+		}
+	}
+
+	// --- property order decided by constructors (AuthIdentity regression, 0.4.0)
+
+	@Test
+	void encodesShapesLikeJackson2() throws IOException {
+		RemotingCodec codec = codec();
+		assertSameJson("request-shapes.json", codec.encodeRequest(WireGoldenRecorder.SHAPES, WireFixtures.shapesArgs()));
+		assertSameJson("response-shapes.json", codec.createResponse(WireFixtures.ident(), true, null));
+	}
+
+	@Test
+	void decodesShapesLikeJackson2() throws Exception {
+		Object[] expected = WireFixtures.shapesArgs();
+		for (RemotingCodec receiver : List.of(codec(), jackson2())) {
+			assertArrayEquals(expected, invoke(receiver, receiver.decodeRequest(golden("request-shapes.json"))));
+			assertEquals(WireFixtures.ident(), receiver.decodeResponse(golden("response-shapes.json"), WireGoldenRecorder.SHAPES.getGenericReturnType()).getReturnValue());
 		}
 	}
 }

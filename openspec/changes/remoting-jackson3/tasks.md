@@ -22,6 +22,10 @@
 - [x] 3a.3 Tests for 0.4.0 → 0.4.0, 0.4.0 → 0.3.x (typed and untyped), 0.3.x → 0.4.0, large values, plain notation
 - [x] 3a.4 README and spec
 
+## 3b. Property order of classes with extra constructors (AuthIdentity, design D1)
+- [x] 3b.1 Reproduce; constructor-shape fixtures recorded with the 0.3.x codec (`*-shapes.json`)
+- [x] 3b.2 `Jackson2CreatorRule` in the codec; build with `-parameters`
+
 ## 4. Verification in the platform's dev stack (platform session)
 - [ ] 4.1 Services on 0.4.0-SNAPSHOT start and serve calls
 - [ ] 4.2 Mixed deploy 0.3.x ↔ 0.4.0, both directions, including `ContextService.setPicture(byte[])` and Billing (BigDecimal with scale, e.g. price `1234.50`, and Date)

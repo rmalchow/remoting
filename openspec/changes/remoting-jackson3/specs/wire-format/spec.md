@@ -19,6 +19,10 @@ The codec SHALL encode every recorded payload to exactly the recorded bytes, and
 - **WHEN** a DTO is encoded
 - **THEN** its properties appear in the order the 0.3.x codec writes them, not sorted alphabetically
 
+#### Scenario: Constructors do not reorder properties
+- **WHEN** a DTO has a no-arg constructor and another unannotated constructor
+- **THEN** the other constructor does not move its properties to the front, as with the 0.3.x codec
+
 ### Requirement: BigDecimal values arrive exactly
 The codec SHALL write a `BigDecimal` as a JSON string holding its plain (non-exponent) representation with its scale, and SHALL accept both a JSON string and a JSON number for a `BigDecimal` target.
 

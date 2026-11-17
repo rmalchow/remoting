@@ -16,6 +16,8 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.SerializationContext;
@@ -23,6 +25,10 @@ import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.cfg.DateTimeFeature;
 import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.cfg.MapperConfig;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.AnnotatedConstructor;
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.ser.std.StdSerializer;
@@ -54,6 +60,8 @@ public class SimpleRemotingCodec implements RemotingCodec {
 			.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
 			.disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
 			.disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+			// which constructors are creators, as in Jackson 2: decides property order (creator properties come first)
+			.annotationIntrospector(new Jackson2CreatorRule())
 			// java.util.Date as "2026-11-16T12:00:00.000+00:00" (Jackson 3 would write "...000Z")
 			.defaultDateFormat(new StdDateFormat().withColonInTimeZone(true).withZeroOffsetAsZ(false))
 			// Locale as "de_DE" (Jackson 3 would write the language tag "de-DE")
@@ -254,6 +262,36 @@ public class SimpleRemotingCodec implements RemotingCodec {
 		@Override
 		public void serialize(BigDecimal value, JsonGenerator gen, SerializationContext ctx) {
 			gen.writeString(value.toPlainString());
+		}
+	}
+
+	/**
+	 * Jackson 2 (with parameter names) uses an unannotated constructor as creator only if the class has no no-arg
+	 * constructor; Jackson 3 also takes it when there is one. Creator properties are written first, so for a class like
+	 * {@code AuthIdentity()} + {@code AuthIdentity(String agent)} Jackson 3 would move "agent" to the front. Unannotated
+	 * constructors of classes with a no-arg constructor are therefore disabled as creators. Explicit {@code @JsonCreator}
+	 * and records are unaffected.
+	 */
+	static final class Jackson2CreatorRule extends JacksonAnnotationIntrospector {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public JsonCreator.Mode findCreatorAnnotation(MapperConfig<?> config, Annotated a) {
+			JsonCreator.Mode mode = super.findCreatorAnnotation(config, a);
+			if (mode == null && a instanceof AnnotatedConstructor c && c.getParameterCount() > 0
+					&& !c.getDeclaringClass().isRecord() && hasNoArgConstructor(c.getDeclaringClass())) {
+				return JsonCreator.Mode.DISABLED;
+			}
+			return mode;
+		}
+
+		private static boolean hasNoArgConstructor(Class<?> type) {
+			try {
+				type.getDeclaredConstructor();
+				return true;
+			} catch (NoSuchMethodException e) {
+				return false;
+			}
 		}
 	}
 

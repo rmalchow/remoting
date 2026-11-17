@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mcg.tools.remoting.api.annotations.RemoteEndpoint;
 
 /** Fixed types and values for the wire-format golden files (design D2 "Fixtures"). */
@@ -31,6 +33,128 @@ public final class WireFixtures {
 
 		/** Types added for the Jackson 3 port (0.4.0); recorded with the 0.3.x Jackson 2 codec. */
 		More more(More more, BigDecimal amount, long big, Optional<String> optional, Level level, Point point, Map<Date, String> byDate);
+
+		/** Constructor shapes that decide property order (0.4.0, found with the platform's AuthIdentity). */
+		Ident shapes(Ident ident, Pair pair, Fixed fixed, Annotated annotated);
+	}
+
+	/**
+	 * Shaped like the platform's AuthIdentity: inherited id, fields not in alphabetical order, a no-arg constructor
+	 * and a one-argument constructor whose parameter is named like a property. Jackson 2 ignores that constructor.
+	 */
+	public static class Ident extends Entity<String> {
+		private String key = "k";
+		private String agent;
+		private Date started = DATE;
+		private List<String> users = List.of("u1");
+
+		public Ident() {
+		}
+
+		public Ident(String agent) {
+			this.agent = agent;
+		}
+
+		public String getAgent() { return agent; }
+		public void setAgent(String agent) { this.agent = agent; }
+		public String getKey() { return key; }
+		public void setKey(String key) { this.key = key; }
+		public Date getStarted() { return started; }
+		public void setStarted(Date started) { this.started = started; }
+		public List<String> getUsers() { return users; }
+		public void setUsers(List<String> users) { this.users = users; }
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof Ident i && Objects.equals(getId(), i.getId()) && Objects.equals(key, i.key) && Objects.equals(agent, i.agent)
+					&& Objects.equals(started, i.started) && Objects.equals(users, i.users);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(getId(), key, agent, started, users);
+		}
+	}
+
+	/** No-arg constructor plus an unannotated two-argument constructor in reverse order: Jackson 2 ignores it. */
+	public static class Pair {
+		private String a = "1";
+		private String b = "2";
+
+		public Pair() {
+		}
+
+		public Pair(String b, String a) {
+			this.a = a;
+			this.b = b;
+		}
+
+		public String getA() { return a; }
+		public void setA(String a) { this.a = a; }
+		public String getB() { return b; }
+		public void setB(String b) { this.b = b; }
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof Pair p && Objects.equals(a, p.a) && Objects.equals(b, p.b);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(a, b);
+		}
+	}
+
+	/** Only an unannotated constructor: Jackson 2 uses it as creator, and writes its properties first. */
+	public static class Fixed {
+		private final String a;
+		private final String b;
+
+		public Fixed(String b, String a) {
+			this.a = a;
+			this.b = b;
+		}
+
+		public String getA() { return a; }
+		public String getB() { return b; }
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof Fixed f && Objects.equals(a, f.a) && Objects.equals(b, f.b);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(a, b);
+		}
+	}
+
+	/** An explicit @JsonCreator next to a no-arg constructor: honoured by both, its properties first. */
+	public static class Annotated {
+		private String a = "1";
+		private String b = "2";
+
+		public Annotated() {
+		}
+
+		@JsonCreator
+		public Annotated(@JsonProperty("b") String b, @JsonProperty("a") String a) {
+			this.a = a;
+			this.b = b;
+		}
+
+		public String getA() { return a; }
+		public String getB() { return b; }
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof Annotated x && Objects.equals(a, x.a) && Objects.equals(b, x.b);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(a, b);
+		}
 	}
 
 	/** An enum whose toString() differs from its name. */
@@ -161,6 +285,17 @@ public final class WireFixtures {
 	public static final long BIG = 9007199254740993L;
 	public static final BigDecimal AMOUNT = new BigDecimal("1234.50");
 	public static final More MORE = more();
+
+	/** Arguments for {@link WireService#shapes}, in parameter order. */
+	public static Object[] shapesArgs() {
+		return new Object[] { ident(), new Pair("2", "1"), new Fixed("2", "1"), new Annotated("2", "1") };
+	}
+
+	public static Ident ident() {
+		Ident i = new Ident("agent-1");
+		i.setId("guid-2");
+		return i;
+	}
 
 	/** Arguments for {@link WireService#more}, in parameter order. */
 	public static Object[] moreArgs() {

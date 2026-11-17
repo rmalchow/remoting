@@ -31,9 +31,11 @@ import com.mcg.tools.remoting.common.wire.WireFixtures.WireService;
 class WireGoldenRecorder {
 
 	static final Method MORE;
+	static final Method SHAPES;
 	static {
 		try {
 			MORE = WireService.class.getMethod("more", More.class, BigDecimal.class, long.class, Optional.class, Level.class, Point.class, Map.class);
+			SHAPES = WireService.class.getMethod("shapes", WireFixtures.Ident.class, WireFixtures.Pair.class, WireFixtures.Fixed.class, WireFixtures.Annotated.class);
 		} catch (NoSuchMethodException e) {
 			throw new ExceptionInInitializerError(e);
 		}
@@ -59,6 +61,8 @@ class WireGoldenRecorder {
 		Path dir = Path.of("src/test/resources/wire");
 		Files.write(dir.resolve("request-more" + suffix + ".json"), codec.encodeRequest(MORE, WireFixtures.moreArgs()));
 		Files.write(dir.resolve("response-more" + suffix + ".json"), codec.createResponse(WireFixtures.MORE, true, null));
+		Files.write(dir.resolve("request-shapes" + suffix + ".json"), codec.encodeRequest(SHAPES, WireFixtures.shapesArgs()));
+		Files.write(dir.resolve("response-shapes" + suffix + ".json"), codec.createResponse(WireFixtures.ident(), true, null));
 		ctx.close();
 	}
 
