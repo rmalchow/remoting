@@ -6,6 +6,7 @@ this is a small library that performs a bit of spring magic to create proxies fo
 
 - Java 25 or later.
 - Spring Boot 3.5 and Spring Boot 4.0. This is one release for both lines.
+- From 0.4.0 the codec uses Jackson 3 (`tools.jackson`), on both lines. The wire format is unchanged, so 0.2.2, 0.3.x and 0.4.0 services can talk to each other.
 - For older setups (older JDKs, older Boot versions), stay on 0.2.x.
 
 ### Overview
@@ -90,9 +91,13 @@ This annotation can be placed on the method declaration on the interface, overri
 
 The codec is responsible for serializing requests and responses from and to byte arrays suitable for sending over the wire. This is also used for mapping arguments to the actual method. 
 
-The default codec uses its own Jackson 2 `ObjectMapper`, created inside the codec. It is configured as follows: dates and durations are written as ISO strings (not timestamps), unknown properties are ignored when reading, and the `Jdk8Module`, `JavaTimeModule` and `ParameterNamesModule` are registered. The `ObjectMapper` bean of the application and any `spring.jackson.*` properties are ignored, so that every service produces the same JSON no matter how it is configured or which Spring Boot version it runs on.
+The default codec uses its own Jackson 3 `JsonMapper` (`tools.jackson.databind`), created inside the codec. It reproduces the JSON of the Jackson 2 codec of 0.2.x/0.3.x exactly: dates and durations are written as ISO strings (not timestamps), `java.util.Date` with a `+00:00` offset, `Locale` as `de_DE`, enums by name, properties in declaration order; unknown properties and `null` for primitives are accepted when reading. The `ObjectMapper`/`JsonMapper` bean of the application and any `spring.jackson.*` properties are ignored, so that every service produces the same JSON no matter how it is configured or which Spring Boot version it runs on.
 
-The wire format is fixed. It is tested against recorded JSON documents in `remoting-common/src/test/resources/wire/`, which were written by the 0.2.2 codec, so services running 0.2.2 and 0.3.0 can talk to each other.
+DTOs can still use the annotations from `com.fasterxml.jackson.annotation` (`@JsonIgnore`, `@JsonProperty`, `@JsonFormat`, ...), which Jackson 3 shares with Jackson 2. Annotations and classes from Jackson 2's `com.fasterxml.jackson.databind` (`@JsonSerialize`, `@JsonDeserialize`, `@JsonNaming`, custom `StdSerializer`s, `JsonNode`) are **not** seen by Jackson 3 and are silently ignored.
+
+The wire format is fixed. It is tested against recorded JSON documents in `remoting-common/src/test/resources/wire/`: the older files were written by the 0.2.2 codec, the `*-more.json` files by the 0.3.x codec. Encoding has to reproduce them byte for byte, and decoding has to give the same values as a copy of the 0.3.x Jackson 2 codec kept in the tests (`Jackson2RemotingCodec`).
+
+Known, unchanged since 0.2.x: arguments and return values are first read without their declared type, then converted. A `BigDecimal` therefore passes through a `double` and loses trailing zeros (`1234.50` arrives as `1234.5`), `Optional.empty()` arrives as `null`, and overloads with the same number of parameters are dispatched ambiguously.
 
 There is one way to interfere with the object mapping in the codec.
 
@@ -138,6 +143,12 @@ Exception messages from remote implementations are logged as they are; the libra
 mvn verify                              # Spring Boot 3.5 (default)
 mvn -Dspringboot.version=4.0.9 verify   # Spring Boot 4
 ```
+
+### Migrating from 0.3.x
+
+- `remoting-common` depends on `tools.jackson.core:jackson-databind` (Jackson 3) instead of Jackson 2's `jackson-databind`, `jackson-datatype-jdk8`, `jackson-datatype-jsr310` and `jackson-module-parameter-names`. If your application used any of these only because remoting brought them in, declare them yourself.
+- A codec subclass that overrides `conform` compiles against Jackson 3 types now.
+- Nothing else: no API, annotation, configuration or wire-format change.
 
 ### Changes in 0.3.1
 

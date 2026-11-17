@@ -8,24 +8,23 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.ToStringSerializer;
+import tools.jackson.databind.util.StdDateFormat;
+
 import com.mcg.tools.remoting.api.RemotingCodec;
 import com.mcg.tools.remoting.api.RemotingInterceptor;
 import com.mcg.tools.remoting.api.entities.RemotingRequest;
@@ -37,15 +36,24 @@ public class SimpleRemotingCodec implements RemotingCodec {
 
 	private static final Log payloadLog = LogFactory.getLog("com.mcg.tools.remoting.payload");
 
-	// the wire format (design D1): Spring Boot 3's auto-configured Jackson defaults, independent of the host's mapper
+	/*
+	 * The wire format: Spring Boot 3's Jackson 2 defaults as of 0.3.x (design D1 of platform-jdk25-boot4),
+	 * reproduced with Jackson 3 (change remoting-jackson3). Every line below exists because a Jackson 3 default
+	 * differs from what 0.3.x writes or accepts; WireFormatTest pins the result byte for byte.
+	 */
 	private final ObjectMapper objectMapper = JsonMapper.builder()
-			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-			.disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
+			.disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+			.disable(DateTimeFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
 			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
 			.disable(MapperFeature.DEFAULT_VIEW_INCLUSION)
-			.addModule(new Jdk8Module())
-			.addModule(new JavaTimeModule())
-			.addModule(new ParameterNamesModule(JsonCreator.Mode.DEFAULT))
+			.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+			.disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+			.disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+			// java.util.Date as "2026-11-16T12:00:00.000+00:00" (Jackson 3 would write "...000Z")
+			.defaultDateFormat(new StdDateFormat().withColonInTimeZone(true).withZeroOffsetAsZ(false))
+			// Locale as "de_DE" (Jackson 3 would write the language tag "de-DE")
+			.addModule(new SimpleModule("remoting-wire-format").addSerializer(Locale.class, ToStringSerializer.instance))
 			.build();
 
 	@Autowired
@@ -125,7 +133,7 @@ public class SimpleRemotingCodec implements RemotingCodec {
 		}
 	}
 
-	protected Object[] conform(Object[] args, Parameter[] parameters) throws JsonParseException, JsonMappingException, IOException {
+	protected Object[] conform(Object[] args, Parameter[] parameters) throws IOException {
 		Object[] out = new Object[args.length];
 		for(int i=0;i < args.length; i++) {
 			out[i] = conform(args[i], parameters[i].getParameterizedType()); 
@@ -133,7 +141,7 @@ public class SimpleRemotingCodec implements RemotingCodec {
 		return out;
 	}
 	
-	protected Object conform(Object arg, Type type) throws JsonParseException, JsonMappingException, JsonProcessingException, IOException {
+	protected Object conform(Object arg, Type type) throws IOException {
 		return objectMapper.readValue(objectMapper.writeValueAsBytes(arg), objectMapper.getTypeFactory().constructType(type));
 	}
 
