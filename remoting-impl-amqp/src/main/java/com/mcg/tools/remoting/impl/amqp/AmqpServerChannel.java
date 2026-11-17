@@ -40,7 +40,8 @@ public class AmqpServerChannel implements ServerChannel{
 		this.setExportedService(exportedService);
 	}
 
-	private void listen(Connection connection) {
+	/** @return true when the channel is consuming */
+	private boolean listen(Connection connection) {
 		
 		try {
 
@@ -50,6 +51,7 @@ public class AmqpServerChannel implements ServerChannel{
 			this.exchangeName = app + ":" + service;
 			this.requestQueueName = app+":"+service+":request";
 			
+			closeChannel();
 			this.serverChannel = connection.createChannel();
 			this.serverChannel.exchangeDeclare(exchangeName, BuiltinExchangeType.DIRECT, true, false, new HashMap<>());
 			this.serverChannel.queueDeclare(requestQueueName, true, false, true, new HashMap<>());
@@ -74,19 +76,37 @@ public class AmqpServerChannel implements ServerChannel{
 					
 				}
 			});
+			return true;
 			
 		} catch (Exception e) {
-			log.warn("error creating consumer: ",e);
+			log.warn("error creating consumer ("+app+":"+service+"), retrying with the next connection check: ",e);
+			closeChannel();
+			return false;
 		}
 
 	}
+
+	private void closeChannel() {
+		if(serverChannel == null) return;
+		try {
+			if(serverChannel.isOpen()) serverChannel.close();
+		} catch (Exception e) {
+		}
+		serverChannel = null;
+	}
 	
-	public void start(Connection connection) {
+	/**
+	 * Starts consuming on the given connection. Does nothing if this channel already consumes on it.
+	 * A failed attempt is not remembered, so calling again with the same connection retries.
+	 */
+	public synchronized void start(Connection connection) {
 		if(connection == this.connection) return;
-		this.connection = connection;
+		this.connection = null;
 		if(connection == null) return;
 		log.info("SERVER ("+app+":"+service+"): new connection: recreating channels");
-		listen(connection);
+		if(listen(connection)) {
+			this.connection = connection;
+		}
 	}
 
 	public ExportedService getExportedService() {

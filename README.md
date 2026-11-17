@@ -139,6 +139,11 @@ mvn verify                              # Spring Boot 3.5 (default)
 mvn -Dspringboot.version=4.0.9 verify   # Spring Boot 4
 ```
 
+### Changes in 0.3.1
+
+- AMQP server channels start consuming when the Spring context has been refreshed. Before, they started at the first connection check, about 5 s after startup, so a freshly started instance served no calls for those seconds.
+- If a server channel fails to start consuming, the next connection check (every 10 s) retries it. Before, it stayed dead until the connection was replaced.
+
 ### Migrating from 0.2.x
 
 - Java 25 is required.

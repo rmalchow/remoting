@@ -1,8 +1,8 @@
 package com.mcg.tools.remoting.impl.amqp;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +12,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 import com.mcg.tools.remoting.common.ExportedService;
@@ -23,16 +25,16 @@ import com.rabbitmq.client.ConnectionFactory;
 import jakarta.annotation.PostConstruct;
 
 @Component
-public class AmqpServerChannelProvider implements ServerChannelProvider {
+public class AmqpServerChannelProvider implements ServerChannelProvider, ApplicationListener<ContextRefreshedEvent> {
 	
 	private static Log log = LogFactory.getLog(AmqpServerChannelProvider.class);
 
-	private List<AmqpServerChannel> serverChannels = new ArrayList<>();
+	private List<AmqpServerChannel> serverChannels = new CopyOnWriteArrayList<>();
 
 	@Autowired
 	private org.springframework.amqp.rabbit.connection.CachingConnectionFactory connectionFactory;
 	private ConnectionFactory cf;
-	private Connection connection;
+	private volatile Connection connection;
 	
 	private ScheduledExecutorService ste = Executors.newScheduledThreadPool(1);
 	
@@ -46,13 +48,25 @@ public class AmqpServerChannelProvider implements ServerChannelProvider {
 		return s;
 	}
 	
-	public void listen() {
+	/**
+	 * Server channels are created while the context is being built, after {@link #init()} has opened the
+	 * connection. Start them as soon as the context is complete instead of waiting for the first scheduled check.
+	 */
+	@Override
+	public void onApplicationEvent(ContextRefreshedEvent event) {
+		Connection c = connection;
+		if(c != null && c.isOpen()) {
+			listen();
+		}
+	}
+	
+	public synchronized void listen() {
 		for(AmqpServerChannel sc : serverChannels) {
 			sc.start(connection);
 		}
 	}
 	
-	public void reconnect() throws IOException, TimeoutException {
+	public synchronized void reconnect() throws IOException, TimeoutException {
 		try {
 			connection.close();
 		} catch (Exception e) {
